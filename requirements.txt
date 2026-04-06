@@ -1,3 +1,5 @@
 streamlit
 pymysql
 pandas
+requests
+plotly
