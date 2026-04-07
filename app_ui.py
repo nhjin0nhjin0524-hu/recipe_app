@@ -31,10 +31,10 @@ SECRET_KEY = "cFlNcHRFdXN2VmxUUFZDRGlzTkVSeU5oRW5CcXFIQUY="
 
 def get_db_connection():
     return pymysql.connect(
-        host='mysql-2657d414-nhjin...aivencloud.com', 
-        port=21782,           
-        user='avnadmin',       
-        password='AVNS_X0ag18_z-mAK5vkZG9P', 
+        host='mysql-2657d414-nhjin0nhjin0524-f196.d.aivencloud.com',
+        port=21782,
+        user='avnadmin',
+        password='AVNS_X0ag18_z-mAK5vkZG9P',
         db='cooking_db',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
