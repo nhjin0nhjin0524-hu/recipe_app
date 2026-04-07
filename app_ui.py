@@ -31,10 +31,10 @@ SECRET_KEY = "cFlNcHRFdXN2VmxUUFZDRGlzTkVSeU5oRW5CcXFIQUY="
 
 def get_db_connection():
     return pymysql.connect(
-        host='mysql-2657d414-nhjin...aivencloud.com', # 👈 Aiven의 Host 주소 복붙!
-        port=21782,            # 👈 Aiven의 Port 번호 (숫자로만 입력)
-        user='avnadmin',       # 👈 Aiven의 User
-        password='AVNS_X0ag18_z-mAK5vkZG9P', # 👈 Aiven의 Password 복붙!
+        host='mysql-2657d414-nhjin...aivencloud.com', 
+        port=21782,           
+        user='avnadmin',       
+        password='AVNS_X0ag18_z-mAK5vkZG9P', 
         db='cooking_db',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
