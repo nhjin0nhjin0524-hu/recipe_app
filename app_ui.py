@@ -39,7 +39,7 @@ def get_db_connection():
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor,
 		ssl={'use_ssl': True},
-        auth_plugin='mysql_native_password'
+        defer_connect=True
     )
 
 # 💡 [스마트 단위 추론기] 식재료 이름을 보고 가장 자연스러운 단위를 찰떡같이 찾아냅니다!
