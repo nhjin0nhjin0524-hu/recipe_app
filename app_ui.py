@@ -998,6 +998,40 @@ def add_ingredient_popup():
 
 # 💡 첫 시작이므로 무조건 'if'로 시작해야 합니다! (elif -> if 로 수정 완료)
 if st.session_state.page == '대시보드':
+# 💡 1. 이모지를 변수에 안전하게 담아두기 (코드 중간에 있으면 에러 날 확률이 높아요)
+    emoji_money = "\U0001F4B8"
+    emoji_vege = "\U0001F966"
+    emoji_alert = "\U0001F6A8"
+
+    # --- 2. 대시보드 화면 출력 ---
+    st.write(f"### {st.session_state.user_name}님 👋")
+    
+    cols = st.columns(3)
+    
+    with cols[0]:
+        # 💡 2. 직접 쓰지 않고 변수 {emoji_money}를 불러와서 사용!
+        st.markdown(f"""
+            <div class="dash-card">
+                <h4>지출 {emoji_money}</h4>
+                <h2 style='color: #0F172A; font-weight: 800; margin: 0;'>{monthly_total:,}</h2>
+            </div>
+        """, unsafe_allow_html=True)
+            
+    with cols[1]:
+        st.markdown(f"""
+            <div class="dash-card">
+                <h4>재료 {emoji_vege}</h4>
+                <h2 style='color: #0F172A; font-weight: 800; margin: 0;'>{total_inventory}</h2>
+            </div>
+        """, unsafe_allow_html=True)
+            
+    with cols[2]:
+        st.markdown(f"""
+            <div class="dash-card">
+                <h4>임박 {emoji_alert}</h4>
+                <h2 style='color: #EF4444; font-weight: 800; margin: 0;'>{imminent_count}</h2>
+            </div>
+        """, unsafe_allow_html=True)
     all_pantry_items = get_fridge_items(st.session_state.user_id)
     
 # 💡 [데이터 계산] 대시보드에 띄울 지출액과 냉장고 상태를 DB에서 실시간으로 계산해옵니다!
