@@ -996,10 +996,8 @@ def add_ingredient_popup():
 
 # --- 6. 페이지 구현 ---
 
-# --- 6. 페이지 구현 ---
-
 if st.session_state.page == '대시보드':
-    # 💡 1. 데이터 계산 (계산을 먼저 해야 화면에 띄울 수 있어요!)
+    # 💡 [순서 교정 1] 화면에 그리기 전에 "데이터 계산"부터 무조건 먼저 합니다!
     monthly_total = 0
     total_inventory = 0
     imminent_count = 0
@@ -1032,19 +1030,18 @@ if st.session_state.page == '대시보드':
                     if isinstance(exp, str):
                         try: exp = datetime.strptime(exp, '%Y-%m-%d').date()
                         except: continue
-                    # 유통기한이 3일 이내면 카운트
                     if (exp - today).days <= 3:
                         imminent_count += 1
             
-            # 냉장고 아이템 정보도 가져오기
+            # 1-3. 냉장고 아이템 정보도 미리 가져오기
             all_pantry_items = get_fridge_items(st.session_state.user_id)
 
     except Exception as e:
-        st.error(f"대시보드 데이터 로드 에러: {e}")
+        st.error(f"대시보드 데이터 로드 중 오류 발생: {e}")
     finally:
         if 'conn' in locals() and conn.open: conn.close()
 
-    # 💡 2. 화면 출력 (이제 데이터가 있으니 안전하게 출력!)
+    # 💡 [순서 교정 2] 이제 데이터가 준비됐으니 "화면 출력"을 시작합니다.
     emoji_money = "\U0001F4B8"
     emoji_vege = "\U0001F966"
     emoji_alert = "\U0001F6A8"
@@ -1052,7 +1049,7 @@ if st.session_state.page == '대시보드':
     st.write(f"### {st.session_state.user_name}님 👋")
     st.write("오늘은 어떤 요리를 만들어 볼까요?")
     
-    # 가로 3열 배치
+    # 📱 가로 3열 배치 강제 적용
     cols = st.columns(3)
     
     with cols[0]:
@@ -1081,22 +1078,12 @@ if st.session_state.page == '대시보드':
 
     st.write("---")
 
-    # 🎯 빠른 레시피 검색 및 나머지 대시보드 내용...
+    # --- 🎯 빠른 레시피 검색 섹션 ---
     st.subheader("🎯 빠른 레시피 검색")
     d_c1, d_c2, d_c3 = st.columns([2, 4, 1])
     
     with d_c1:
-        dash_cat_list = ["전체"]
-        try:
-            conn = get_db_connection()
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT name FROM recipe_categories ORDER BY id")
-                for row in cursor.fetchall():
-                    dash_cat_list.append(row['name'])
-        except:
-            dash_cat_list = ["전체", "국/탕", "찌개/전골", "기기타"]
-        finally:
-            if 'conn' in locals() and conn.open: conn.close()
+        dash_cat_list = ["전체", "국/탕", "찌개/전골", "볶음", "구이", "튀김", "무침/나물", "찜", "면/파스타", "밥/덮밥", "전/부침", "간식/디저트", "기타"]
         d_sel = st.selectbox("카테고리", dash_cat_list, key="dash_sel")
         
     with d_c2:
@@ -1109,35 +1096,33 @@ if st.session_state.page == '대시보드':
     if d_btn or d_kw:
         res = get_recipes(d_kw, d_sel if d_sel != '전체' else None)
         if res:
-            if 'open_dash_recipe' not in st.session_state:
-                st.session_state.open_dash_recipe = None
             for idx, r in enumerate(res):
-                cat_name = r.get('cat_name') or '기타'
                 title = clean_recipe_title(r.get('title') or "제목 없음")
                 recipe_id = r.get('id') 
-                btn_key = f"dash_rec_btn_{recipe_id}_{idx}"
-                is_open = (st.session_state.open_dash_recipe == btn_key)
-                icon = "🔽" if not is_open else "🔼"
-                if st.button(f"{icon} [{cat_name}] {title}", key=btn_key, use_container_width=True):
-                    st.session_state.open_dash_recipe = None if is_open else btn_key
-                    st.rerun()
-                if is_open:
-                    with st.container(border=True):
-                        st.subheader("🛒 필요 재료")
-                        ingredients = get_recipe_ingredients(recipe_id)
-                        for ing in ingredients:
-                            st.markdown(f"• {ing['name']} ({ing['amount']}{ing.get('unit_name','')})")
+                if st.button(f"🍴 {title}", key=f"dash_res_{recipe_id}_{idx}", use_container_width=True):
+                    show_recipe_detail(recipe_id, title, r.get('description',''), "보통")
         else:
             st.info("조건에 맞는 레시피가 없습니다.")
 
     st.write("---")
 
-    # 예산 맞춤 / 재료 관리 / 임박 알림 섹션
+    # --- 💰 예산 맞춤 추천 ---
     st.subheader("💰 예산 맞춤 가성비 레시피")
     user_budget = st.slider("한 끼 예산 설정 (원)", 1000, 30000, 10000, 1000)
-    if st.button("🔄 다른 레시피 찾기", type="primary"):
+    if st.button("🔄 다른 레시피 찾기", type="primary", use_container_width=True):
         st.session_state.budget_recipes = get_recipes_by_budget(user_budget)
         st.session_state.budget_amount = user_budget
+
+    if 'budget_recipes' in st.session_state and st.session_state.budget_recipes:
+        b_cols = st.columns(2)
+        for idx, rec in enumerate(st.session_state.budget_recipes):
+            with b_cols[idx % 2]:
+                with st.container(border=True):
+                    title = clean_recipe_title(rec.get('title',''))
+                    st.markdown(f"**{title}**")
+                    st.markdown(f"<span style='color:#10B981;'>{int(rec.get('estimated_cost', 0)):,}원</span>", unsafe_allow_html=True)
+                    if st.button("보기", key=f"bud_btn_{rec['id']}_{idx}"):
+                        show_recipe_detail(rec['id'], title, rec.get('description',''), rec.get('difficulty'))
 
     st.write("---")
     l_sec, r_sec = st.columns([1.5, 1])
@@ -1145,44 +1130,13 @@ if st.session_state.page == '대시보드':
         st.subheader("재료 관리👜")
         if st.button("➕ 새 재료 추가 (영수증/직접)", use_container_width=True):
             add_ingredient_popup()
-    with right_section:
+    with r_sec:
         st.subheader("⚠️ 빨리 사용하세요!")
         if all_pantry_items:
-            # 💡 빈칸(None)이 정렬 에러를 내지 않도록 막아주는 함수
-            def sort_by_date(x):
-                val = x.get('expiry_date')
-                if not val: return datetime.max.date() # 기한 없으면 제일 뒤로(안전지대)
-                if hasattr(val, 'date'): return val.date()
-                try: return datetime.strptime(str(val), '%Y-%m-%d').date()
-                except: return datetime.max.date()
-            
-            # 에러 없이 안전하게 정렬!
-            sorted_items = sorted(all_pantry_items, key=sort_by_date)
-            
-            # 유통기한이 있는 재료들 중에서만 상위 4개 추출
-            urgent_items = [item for item in sorted_items if item.get('expiry_date')][:4]
-            
-            if urgent_items:
-                st.markdown('<div class="dash-card" style="padding:15px;">', unsafe_allow_html=True)
-                for item in urgent_items:
-                    exp_date = sort_by_date(item)
-                    d_day = (exp_date - today).days
-                    
-                    status_class = "status-red" if d_day <= 3 else "status-orange"
-                    d_day_text = f"D-{d_day}" if d_day >= 0 else f"기한만료({abs(d_day)}일)"
-                    
-                    st.markdown(f'''
-                        <div class="fridge-item {status_class}" style="margin-bottom:10px;">
-                            <span style="font-weight:600;">{item['item_name']}</span>
-                            <span style="font-weight:bold;">{d_day_text}</span>
-                        </div>
-                    ''', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.info("임박한 재료가 없습니다.")
-        else:
-            st.info("냉장고가 비어있습니다. 재료를 추가해보세요!")
-
+            # 유통기한 순 정렬 후 상위 4개만
+            sorted_items = sorted(all_pantry_items, key=lambda x: x.get('expiry_date') or datetime.max.date())[:4]
+            for item in sorted_items:
+                st.markdown(f'<div class="fridge-item status-red">{item["item_name"]}</div>', unsafe_allow_html=True)
 
 elif st.session_state.page == '레시피':
     st.markdown("""
