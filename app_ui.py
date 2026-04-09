@@ -1,4 +1,4 @@
- -*- coding: utf-8 -*-
+-*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import requests, uuid, time, json, pymysql, re
@@ -1059,7 +1059,7 @@ if st.session_state.page == '대시보드':
     # 1. 이번 달 지출 카드
     st.markdown(f"""
         <div class="dash-card">
-            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>이번 달 지출</h4>
+            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>이번 달 지출💸</h4>
             <h2 style='color: #0F172A; font-size: 28px; font-weight: 800; margin: 0;'>{monthly_total:,}원</h2>
         </div>
     """, unsafe_allow_html=True)
@@ -1075,7 +1075,7 @@ if st.session_state.page == '대시보드':
     # 3. 임박 재료 카드 (🚨 색상 강조 유지)
     st.markdown(f"""
         <div class="dash-card">
-            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>임박 재료</h4>
+            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>임박 재료🚨</h4>
             <h2 style='color: #EF4444; font-size: 28px; font-weight: 800; margin: 0;'>{imminent_count}개</h2>
         </div>
     """, unsafe_allow_html=True)
