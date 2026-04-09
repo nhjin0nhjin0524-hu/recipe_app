@@ -38,8 +38,7 @@ def get_db_connection():
         db='cooking_db',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor,
-		ssl={'use_ssl': True},
-        defer_connect=True
+		ssl={'use_ssl': True}
     )
 
 # 💡 [스마트 단위 추론기] 식재료 이름을 보고 가장 자연스러운 단위를 찰떡같이 찾아냅니다!
