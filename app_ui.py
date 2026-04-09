@@ -5,6 +5,33 @@ import requests, uuid, time, json, pymysql, re
 import plotly.express as px
 from datetime import datetime, timedelta
 import random
+# --- [안전한 이모지 사전] SyntaxError 방지를 위해 유니코드로 정의합니다 ---
+EMO_DASH = "\U0001F4CA"   # 📊
+EMO_RECIPE = "\U0001F374" # 🍴
+EMO_FRIDGE = "\U0001FAD9" # 🫙
+EMO_CASH = "\U0001F4C8"   # 📈
+EMO_HEART = "\U00002764"  # ❤️
+EMO_EMPTY_HEART = "\U0001F90D" # 🤍 (또는 🤍)
+EMO_MONEY = "\U0001F4B8"  # 💸
+EMO_VEGE = "\U0001F966"   # 🥦
+EMO_ALERT = "\U0001F6A8"  # 🚨
+EMO_SEARCH = "\U0001F50D" # 🔍
+EMO_PLUS = "\U00002795"   # ➕
+EMO_PENCIL = "\U0000270F" # ✏️
+EMO_SCALE = "\U00002696"  # ⚖️
+EMO_TRASH = "\U0001F5D1"  # 🗑️
+EMO_SAVE = "\U0001F4BE"   # 💾
+EMO_HELLO = "\U0001F44B"  # 👋
+EMO_BAG = "\U0001F45C"    # 👜
+EMO_CAMERA = "\U0001F4F7" # 📷
+EMO_KEY = "\U00002328"    # ⌨️
+EMO_PEOPLE = "\U0001F46A" # 👨‍👩‍👧‍👦
+EMO_FOLDER = "\U0001F4C1" # 📁
+EMO_STAR = "\U00002728"   # ✨
+EMO_BROOM = "\U0001FE9A"  # 🧹
+EMO_DICE = "\U0001F3B2"   # 🎲
+EMO_DOWN = "\U0001F53D"   # 🔽
+EMO_UP = "\U0001F53C"     # 🔼
 
 # --- 1. 페이지 설정 및 디자인 ---
 st.set_page_config(page_title="AI 냉장고 요리사", layout="wide")
@@ -721,6 +748,13 @@ if 'spend_data' not in st.session_state: st.session_state.spend_data = pd.DataFr
 # --- 4. 타이틀 및 로그인 화면 ---
 st.markdown('<h1 class="main-title">SMART KITCHEN</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">PREMIUM REFRIGERATOR MANAGEMENT</p>', unsafe_allow_html=True)
+st.markdown(f"""
+    <div class="dash-card">
+        <h4>지출 {EMO_MONEY}</h4>
+        <h2 style='color: #0F172A; font-weight: 800; margin: 0;'>{monthly_total:,}</h2>
+    </div>
+""", unsafe_allow_html=True)
+# 나머지 재료, 임박 카드도 {EMO_VEGE}, {EMO_ALERT}로 교체!
 
 if not st.session_state.logged_in:
     st.markdown('<div class="dash-card">', unsafe_allow_html=True)
@@ -762,6 +796,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- 5. 메뉴바 (짧은 이름으로 변경하여 한 줄 유지) ---
+m_list = [f"{EMO_DASH} 홈", f"{EMO_RECIPE} 레시피", f"{EMO_FRIDGE} 냉장고", f"{EMO_CASH} 식비", f"{EMO_HEART} 찜"]ㄷ
 m_list = ["📊 홈", "🍴 레시피", "🫙 냉장고", "📈 식비", "❤️ 찜"] 
 nav = st.columns(5)
 for i, m in enumerate(m_list):
@@ -1532,14 +1567,14 @@ elif st.session_state.page == '냉장고':
     # (이 아래는 그대로 두세요!)
     h_c1, h_c2 = st.columns([3, 1])
     with h_c1:
-        st.markdown("""
+        st.markdown(f"""
             <div style="display: flex; align-items: center; margin-top: -10px; margin-bottom: 0px;">
-                <span style="font-size: 28px; margin-right: 10px;">🫙</span>
-                <h2 style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 28px; color: #000000; margin: 0; letter-spacing: -0.5px;">
+                <span style="font-size: 28px; margin-right: 10px;">{EMO_FRIDGE}</span>
+                <h2 style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 28px; color: #000000; margin: 0;">
                     나의 냉장고 관리
                 </h2>
             </div>
-        """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
     with h_c2:
         if st.button("➕ 재료 추가", key="fridge_add_btn", use_container_width=True):
             add_ingredient_popup()
