@@ -726,6 +726,11 @@ if 'temp_matched_items' not in st.session_state: st.session_state.temp_matched_i
 if 'total_spend' not in st.session_state: st.session_state.total_spend = 0
 if 'spend_data' not in st.session_state: st.session_state.spend_data = pd.DataFrame(columns=['날짜', '금액'])
 
+# 💡 에러 방지를 위해 변수들을 미리 '0'으로 만들어둡니다. (NameError 해결!)
+monthly_total = 0
+total_inventory = 0
+imminent_count = 0
+
 # --- 4. 타이틀 및 로그인 화면 ---
 st.markdown('<h1 class="main-title">SMART KITCHEN</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">PREMIUM REFRIGERATOR MANAGEMENT</p>', unsafe_allow_html=True)
