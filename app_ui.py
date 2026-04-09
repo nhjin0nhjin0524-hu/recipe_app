@@ -37,15 +37,34 @@ st.markdown("""
     }
 
     @media (max-width: 768px) {
-        .main-title { font-size: 32px !important; }
-        .sub-title { font-size: 10px !important; margin-bottom: 20px !important; }
-        .dash-card { padding: 10px 5px !important; }
-        .dash-card h2 { font-size: 14px !important; }
-        .dash-card h4 { font-size: 9px !important; }
-        .stButton > button { font-size: 9px !important; padding: 2px !important; }
+        /* 1. 메인 타이틀 더 축소 */
+        .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
+        .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
+
+        /* 2. 대시보드 카드 텍스트 초소형화 */
+        .dash-card { 
+            padding: 5px 2px !important; /* 내부 여백 거의 없앰 */
+            margin-bottom: 5px !important; 
+            border-radius: 8px !important; /* 카드도 조금 작게 */
+        }
+        .dash-card h4 { 
+            font-size: 8px !important; /* 제목 (지출, 재료 등) */
+            margin-bottom: 0px !important; 
+        }
+        .dash-card h2 { 
+            font-size: 13px !important; /* 숫자 부분 */
+            line-height: 1.1 !important;
+        }
+
+        /* 3. 메뉴바 버튼 글씨 및 아이콘 크기 조절 */
+        .stButton > button { 
+            font-size: 8px !important; /* 메뉴 글씨 */
+            padding: 2px 0px !important; 
+            height: 28px !important;
+            min-height: 28px !important;
+            letter-spacing: -1px !important; /* 글자 간격 좁히기 */
+        }
     }
-    </style>
-""", unsafe_allow_html=True)
 
 # --- 2. OCR 설정 및 DB 연결 함수 ---
 INVOKE_URL = "https://ccse0ls88v.apigw.ntruss.com/custom/v1/50582/7e4ce7a941fe74d6ee3c56235520aaeb568c2b28b69643d6e51e513aa4360eff/document/receipt"
