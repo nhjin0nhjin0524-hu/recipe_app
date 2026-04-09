@@ -3,3 +3,4 @@ pymysql
 pandas
 requests
 plotly
+cryptography
