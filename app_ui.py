@@ -1654,16 +1654,22 @@ elif st.session_state.page == '냉장고':
                 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
 
-elif st.session_state.page == '즐겨찾기':
-    # 💡 1. 예쁜 페이지 타이틀
-    st.markdown("""
+elif st.session_state.page == '찜':
+    # 💡 1. 사용할 이모지들을 안전한 코드로 정의 (이미 상단에 정의했다면 생략 가능)
+    EMO_HEART = "\U00002764"  # ❤️
+
+    # 💡 2. 직접 그림을 넣지 말고 {EMO_HEART} 변수를 사용하세요!
+    st.markdown(f"""
         <div style="display: flex; align-items: center; margin-top: -10px; margin-bottom: 15px;">
-            <span style="font-size: 28px; margin-right: 10px;">❤️</span>
+            <span style="font-size: 28px; margin-right: 10px;">{EMO_HEART}</span>
             <h2 style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 28px; color: #000000; margin: 0; letter-spacing: -0.5px;">
                 나의 즐겨찾기 레시피
             </h2>
         </div>
     """, unsafe_allow_html=True)
+    
+    # 리스트 출력 부분의 제목 앞에도 변수로 교체!
+    # st.markdown(f"**{EMO_HEART} [{cat_name}] {title}**")
     
     # 💡 2. DB에서 내가 찜한 레시피들 가져오기
     fav_recipes = get_favorite_recipes(st.session_state.user_id)
