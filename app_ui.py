@@ -1007,33 +1007,36 @@ if st.session_state.page == '대시보드':
     st.write(f"## 안녕하세요, {st.session_state.user_name}님! 👋")
     st.write("오늘은 어떤 요리를 만들어 볼까요?")
     
-    cols = st.columns(3)
+    # cols = st.columns(3) # 💡 [수정] 기존 가로 3열 배열을 주석 처리합니다.
     
-    with cols[0]:
-        st.markdown(f"""
-            <div class="dash-card">
-                <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>이번 달 지출 💸</h4>
-                <h2 style='color: #0F172A; font-size: 28px; font-weight: 800; margin: 0;'>{monthly_total:,}원</h2>
-            </div>
-        """, unsafe_allow_html=True)
-            
-    with cols[1]:
-        st.markdown(f"""
-            <div class="dash-card">
-                <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>남은 재료 🥦</h4>
-                <h2 style='color: #0F172A; font-size: 28px; font-weight: 800; margin: 0;'>{total_inventory}개</h2>
-            </div>
-        """, unsafe_allow_html=True)
-            
-    with cols[2]:
-        st.markdown(f"""
-            <div class="dash-card">
-                <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>임박 재료 🚨</h4>
-                <h2 style='color: #EF4444; font-size: 28px; font-weight: 800; margin: 0;'>{imminent_count}개</h2>
-            </div>
-        """, unsafe_allow_html=True)
+    # 💡 [모바일 최적화] st.columns를 쓰지 않고, 그냥 st.markdown을 차례로 씁니다.
+    # 이렇게 하면 노트북/모바일 상관없이 한 줄에 하나씩 꽉 차게 쌓여서 가시성이 최고가 됩니다!
     
-    # 👆👆👆 (위쪽: 임박 재료 카드 출력하는 곳) 👆👆👆
+    # 1. 이번 달 지출 카드
+    st.markdown(f"""
+        <div class="dash-card">
+            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>이번 달 지출 💸</h4>
+            <h2 style='color: #0F172A; font-size: 28px; font-weight: 800; margin: 0;'>{monthly_total:,}원</h2>
+        </div>
+    """, unsafe_allow_html=True)
+        
+    # 2. 남은 재료 카드
+    st.markdown(f"""
+        <div class="dash-card">
+            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>남은 재료 🥦</h4>
+            <h2 style='color: #0F172A; font-size: 28px; font-weight: 800; margin: 0;'>{total_inventory}개</h2>
+        </div>
+    """, unsafe_allow_html=True)
+        
+    # 3. 임박 재료 카드 (🚨 색상 강조 유지)
+    st.markdown(f"""
+        <div class="dash-card">
+            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>임박 재료 🚨</h4>
+            <h2 style='color: #EF4444; font-size: 28px; font-weight: 800; margin: 0;'>{imminent_count}개</h2>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # 👆👆👆 (위쪽: 카드 세로 출력으로 변경 완료) 👆👆👆
     st.write("---")
 
     # 👇👇👇 여기서부터 복사해서 넣으세요 👇👇👇
