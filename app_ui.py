@@ -37,7 +37,7 @@ def get_db_connection():
         password='AVNS_X0ag18_z-mAK5vkZG9P',
         db='cooking_db',
         charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
+        cursorclass=pymysql.cursors.DictCursor,
 		ssl_verify_cert=False
     )
 
