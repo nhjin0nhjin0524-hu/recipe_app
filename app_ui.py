@@ -1181,9 +1181,8 @@ elif st.session_state.page == '레시피':
 
     pantry_items = get_fridge_items(st.session_state.user_id)
     today = datetime.now().date()
-	if urgent_names and not search_query:
-        st.subheader(f"{icon_alert} 냉장고 파먹기") # 변수 사용
-    
+    if urgent_names and not search_query:
+        st.subheader(f"{icon_alert} 냉장고 파먹기")
     # --- (임박 재료 추천 로직) ---
     def get_exp_days(x):
         val = x.get('expiry_date')
