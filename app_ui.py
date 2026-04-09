@@ -777,7 +777,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- 5. 메뉴바 (짧은 이름으로 변경하여 한 줄 유지) ---
-m_list = [f"{EMO_DASH} 홈", f"{EMO_RECIPE} 레시피", f"{EMO_FRIDGE} 냉장고", f"{EMO_CASH} 식비", f"{EMO_HEART} 찜"]ㄷ
+m_list = [f"{EMO_DASH} 홈", f"{EMO_RECIPE} 레시피", f"{EMO_FRIDGE} 냉장고", f"{EMO_CASH} 식비", f"{EMO_HEART} 찜"]
 m_list = ["📊 홈", "🍴 레시피", "🫙 냉장고", "📈 식비", "❤️ 찜"] 
 nav = st.columns(5)
 for i, m in enumerate(m_list):
