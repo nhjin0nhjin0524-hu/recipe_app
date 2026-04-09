@@ -1666,7 +1666,7 @@ elif st.session_state.page == '찜':
                 나의 즐겨찾기 레시피
             </h2>
         </div>
-    """, unsafe_allow_html=True)
+    """", unsafe_allow_html=True)
     
     # 리스트 출력 부분의 제목 앞에도 변수로 교체!
     # st.markdown(f"**{EMO_HEART} [{cat_name}] {title}**")
