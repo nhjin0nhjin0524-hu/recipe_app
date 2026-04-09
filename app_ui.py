@@ -1065,20 +1065,29 @@ if st.session_state.page == '대시보드':
     """, unsafe_allow_html=True)
         
     # 2. 남은 재료 카드
-    st.markdown(f"""
-        <div class="dash-card">
-            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>남은 재료</h4>
-            <h2 style='color: #0F172A; font-size: 28px; font-weight: 800; margin: 0;'>{total_inventory}개</h2>
-        </div>
-    """, unsafe_allow_html=True)
-        
-    # 3. 임박 재료 카드 (🚨 색상 강조 유지)
-    st.markdown(f"""
-        <div class="dash-card">
-            <h4 style='color: #64748B; font-size: 14px; margin-bottom: 5px;'>임박 재료🚨</h4>
-            <h2 style='color: #EF4444; font-size: 28px; font-weight: 800; margin: 0;'>{imminent_count}개</h2>
-        </div>
-    """, unsafe_allow_html=True)
+    with cols[0]:
+        st.markdown(f"""
+            <div class="dash-card">
+                <h4 style='color: #64748B; margin-bottom: 2px;'>지출 \U0001F4B8</h4>
+                <h2 style='color: #0F172A; font-weight: 800; margin: 0;'>{monthly_total:,}</h2>
+            </div>
+        """, unsafe_allow_html=True)
+            
+    with cols[1]:
+        st.markdown(f"""
+            <div class="dash-card">
+                <h4>재료 \U0001F966</h4>
+                <h2 style='color: #0F172A; font-weight: 800; margin: 0;'>{total_inventory}</h2>
+            </div>
+        """, unsafe_allow_html=True)
+            
+    with cols[2]:
+        st.markdown(f"""
+            <div class="dash-card">
+                <h4>임박 \U0001F6A8</h4>
+                <h2 style='color: #EF4444; font-weight: 800; margin: 0;'>{imminent_count}</h2>
+            </div>
+        """, unsafe_allow_html=True)
     
     # 👆👆👆 (위쪽: 카드 세로 출력으로 변경 완료) 👆👆👆
     st.write("---")
