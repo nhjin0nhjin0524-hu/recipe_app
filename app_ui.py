@@ -23,6 +23,26 @@ st.markdown("""
     .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
     .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
     </style>
+	/* --- 모바일 콤팩트 디자인 추가 --- */
+    @media (max-width: 768px) {
+        /* 1. 타이틀 크기 축소 */
+        .main-title { font-size: 32px !important; }
+        .sub-title { font-size: 10px !important; margin-bottom: 20px !important; letter-spacing: 2px !important; }
+
+        /* 2. 대시보드 카드 텍스트 및 간격 축소 (한 줄 배치를 위해) */
+        .dash-card { padding: 10px 5px !important; margin-bottom: 10px !important; text-align: center; }
+        .dash-card h4 { font-size: 10px !important; margin-bottom: 2px !important; }
+        .dash-card h2 { font-size: 16px !important; }
+
+        /* 3. 메뉴바 버튼 글씨 크기 및 여백 최소화 */
+        .stButton > button {
+            font-size: 10px !important;
+            padding: 4px 0px !important;
+            height: auto !important;
+            min-height: 30px !important;
+            letter-spacing: -0.5px;
+        }
+    }
 """, unsafe_allow_html=True)
 
 # --- 2. OCR 설정 및 DB 연결 함수 ---
@@ -719,12 +739,14 @@ if not st.session_state.logged_in:
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- 5. 메뉴바 ---
-m_list = ["📊 대시보드", "🍴 레시피", "🫙 냉장고", "📈 식비통계", "❤️ 즐겨찾기"]
+# --- 5. 메뉴바 (짧은 이름으로 변경하여 한 줄 유지) ---
+m_list = ["📊 홈", "🍴 레시피", "🫙 냉장고", "📈 식비", "❤️ 찜"] 
 nav = st.columns(5)
 for i, m in enumerate(m_list):
     if nav[i].button(m, use_container_width=True):
-        st.session_state.page = m.split(" ")[1]
+        # 이동할 때 글자 처리는 그대로 유지
+        page_name = "대시보드" if "홈" in m else m.split(" ")[1]
+        st.session_state.page = page_name
 st.write("---")
 
 import uuid # 코드 맨 위에 이 줄이 있는지 확인해 주세요! (없으면 추가)
