@@ -22,27 +22,29 @@ st.markdown("""
     .recipe-card { background: white; border-radius: 16px; border: 1px solid #F1F5F9; overflow: hidden; margin-bottom: 20px; transition: 0.3s; }
     .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
     .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
-    </style>
-	/* --- 모바일 콤팩트 디자인 추가 --- */
-    @media (max-width: 768px) {
-        /* 1. 타이틀 크기 축소 */
-        .main-title { font-size: 32px !important; }
-        .sub-title { font-size: 10px !important; margin-bottom: 20px !important; letter-spacing: 2px !important; }
 
-        /* 2. 대시보드 카드 텍스트 및 간격 축소 (한 줄 배치를 위해) */
-        .dash-card { padding: 10px 5px !important; margin-bottom: 10px !important; text-align: center; }
-        .dash-card h4 { font-size: 10px !important; margin-bottom: 2px !important; }
-        .dash-card h2 { font-size: 16px !important; }
-
-        /* 3. 메뉴바 버튼 글씨 크기 및 여백 최소화 */
-        .stButton > button {
-            font-size: 10px !important;
-            padding: 4px 0px !important;
-            height: auto !important;
-            min-height: 30px !important;
-            letter-spacing: -0.5px;
-        }
+    /* 📱 모바일에서도 강제로 가로 배열 유지하기 */
+    [data-testid="column"] {
+        width: calc(33.3333% - 1rem) !important;
+        flex: 1 1 calc(33.3333% - 1rem) !important;
+        min-width: calc(33.3333% - 1rem) !important;
     }
+
+    /* 메뉴바 5열 강제 고정 */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(n) {
+        min-width: 0px !important;
+        flex: 1 1 0% !important;
+    }
+
+    @media (max-width: 768px) {
+        .main-title { font-size: 32px !important; }
+        .sub-title { font-size: 10px !important; margin-bottom: 20px !important; }
+        .dash-card { padding: 10px 5px !important; }
+        .dash-card h2 { font-size: 14px !important; }
+        .dash-card h4 { font-size: 9px !important; }
+        .stButton > button { font-size: 9px !important; padding: 2px !important; }
+    }
+    </style>
 """, unsafe_allow_html=True)
 
 # --- 2. OCR 설정 및 DB 연결 함수 ---
