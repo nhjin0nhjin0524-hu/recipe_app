@@ -1153,11 +1153,26 @@ if st.session_state.page == '대시보드':
             for item in sorted_items:
                 st.markdown(f'<div class="fridge-item status-red">{item["item_name"]}</div>', unsafe_allow_html=True)
 
-# 1. 먼저 데이터를 가져오고
+elif st.session_state.page == '레시피':
+    # 1. 아이콘 변수 (에러 방지)
+    icon_fork = "\U0001F374"
+    icon_search = "\U0001F50D"
+    icon_alert = "\U0001F6A8"
+
+    # 2. 타이틀 & 검색창
+    st.markdown(f"""
+        <div style="display: flex; align-items: center; margin-top: -10px; margin-bottom: 15px;">
+            <span style="font-size: 28px; margin-right: 10px;">{icon_fork}</span>
+            <h2 style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 28px; color: #000000; margin: 0;">맞춤 레시피 추천</h2>
+        </div>
+    """, unsafe_allow_html=True)
+
+    search_query = st.text_input(f"{icon_search} 찾으시는 요리나 재료가 있나요?", placeholder="예: 김치찌개, 양파...")
+
+    # 3. 데이터 준비 (DB에서 내 냉장고 재료 가져오기)
     pantry_items = get_fridge_items(st.session_state.user_id)
     today = datetime.now().date()
 
-    # 2. get_exp_days 함수와 urgent_names 계산 로직을 '위'로 올리세요!
     def get_exp_days(x):
         val = x.get('expiry_date')
         if not val: return 999
@@ -1165,42 +1180,26 @@ if st.session_state.page == '대시보드':
         else: d = datetime.strptime(str(val), '%Y-%m-%d').date()
         return (d - today).days
 
-    # --- 여기서 urgent_names를 미리 만듭니다 ---
-    urgent_names = [item['item_name'] for item in pantry_items if get_exp_days(item) <= 3]
-    if urgent_names and not search_query:
-        st.subheader(f"{icon_alert} 냉장고 파먹기")
-	
-    # 검색어가 바뀌면 1페이지로 리셋
-    if search_query != st.session_state.last_search:
-        st.session_state.recipe_page = 1
-        st.session_state.last_search = search_query
-
+    # --- 💡 [여기서부터 순서가 핵심!] ---
     
-   
-    # 👇 [여기가 핵심입니다!] get_exp_days(item) >= 0 조건을 추가해서, 
-    # 유통기한이 지나 마이너스(-)가 된 재료는 아예 리스트에 끼지도 못하게 막아버립니다!
+    # A. 유통기한 안 지난 재료만 거르기
     valid_pantry_items = [item for item in pantry_items if item.get('expiry_date') and get_exp_days(item) >= 0]
-    
-    # 남은 기한이 짧은 순서대로 정렬 (이제 만료된 재료는 이 안에 없습니다)
     all_exp_items = sorted(valid_pantry_items, key=get_exp_days)
-    
+
+    # B. 임박 재료 이름 리스트 만들기 (리스트 먼저 다 만들고 출력해야 함!)
     urgent_materials = []
     urgent_names = []
-    seen_names = set() 
-    
+    seen_names = set()
     for item in all_exp_items:
-        if get_exp_days(item) <= 3: # 0일 ~ 3일 남은 재료들만 쏙쏙 뽑기
-            clean_name = item['item_name'].replace(" ", "") 
-            
+        if get_exp_days(item) <= 3:
+            clean_name = item['item_name'].replace(" ", "")
             if clean_name not in seen_names:
                 seen_names.add(clean_name)
                 urgent_names.append(item['item_name'])
                 urgent_materials.append(item)
-                
-            if len(urgent_names) >= 10: 
-                break
+        if len(urgent_names) >= 10: break
 
-    # 💡 만약 0~3일 남은 임박 재료가 없다면? (안전하게 4일 이상 남은 싱싱한 재료라도 추천)
+    # C. 만약 임박 재료가 하나도 없으면 플랜 B (싱싱한 거라도 2개 넣기)
     if not urgent_names and all_exp_items:
         for item in all_exp_items:
             clean_name = item['item_name'].replace(" ", "")
@@ -1208,54 +1207,26 @@ if st.session_state.page == '대시보드':
                 seen_names.add(clean_name)
                 urgent_names.append(item['item_name'])
                 urgent_materials.append(item)
-            if len(urgent_names) >= 2:
-                break
+            if len(urgent_names) >= 2: break
 
-    # 💡 만약 0~3일 남은 임박 재료가 없다면? (안전하게 4일 이상 남은 싱싱한 재료라도 추천)
-    if not urgent_names and all_exp_items:
-        for item in all_exp_items:
-            clean_name = item['item_name'].replace(" ", "")
-            if clean_name not in seen_names:
-                seen_names.add(clean_name)
-                urgent_names.append(item['item_name'])
-                urgent_materials.append(item)
-            if len(urgent_names) >= 2:
-                break
-
-
-    # 💡 만약 3일 이하 남은 '진짜 임박 재료'가 냉장고에 하나도 없다면? 
-    if not urgent_names and all_exp_items:
-        for item in all_exp_items:
-            clean_name = item['item_name'].replace(" ", "")
-            if clean_name not in seen_names:
-                seen_names.add(clean_name)
-                urgent_names.append(item['item_name'])
-                urgent_materials.append(item)
-            if len(urgent_names) >= 2:
-                break
+    # 4. 이제 화면에 '냉장고 파먹기'와 '레시피 목록' 출력 (여기서 DB 연결 시작!)
+    if urgent_names and not search_query:
+        st.subheader(f"{icon_alert} 냉장고 파먹기")
         
-        # 💡 [핵심 1] 사용자가 지금 몇 페이지를 보고 있는지 기억하는 메모장!
-        if 'fridge_page' not in st.session_state:
-            st.session_state.fridge_page = 1
-            
-        items_per_page = 8 # 한 장에 보여줄 레시피 개수
-        # (현재 페이지 - 1) * 8 을 계산해서 몇 개를 건너뛸지(offset) 정합니다.
+        # 페이지네이션 설정
+        if 'fridge_page' not in st.session_state: st.session_state.fridge_page = 1
+        items_per_page = 8
         offset = (st.session_state.fridge_page - 1) * items_per_page
 
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
+                # 혜진님이 작성하신 아주 훌륭한 SQL 쿼리 로직
                 conditions = " OR ".join(["ri.name LIKE %s"] * len(urgent_names))
                 count_cases = " + ".join(["MAX(CASE WHEN ri.name LIKE %s THEN 1 ELSE 0 END)"] * len(urgent_names))
+                params = [f"%{name}%" for name in urgent_names] + [f"%{name}%" for name in urgent_names] + [f"%{urgent_names[0]}%"]
                 
-                params = [f"%{name}%" for name in urgent_names]
-                params += [f"%{name}%" for name in urgent_names]
-                params.append(f"%{urgent_names[0]}%")
-                
-                # 💡 [핵심 2] 다음 장이 있는지 몰래 확인하기 위해, 8개가 아니라 딱 '1개 더(9개)'를 가져와 봅니다.
-                fetch_limit = items_per_page + 1 
-                
-                # LIMIT과 OFFSET을 추가해서 페이지별로 잘라서 가져옵니다.
+                fetch_limit = items_per_page + 1
                 sql = f"""
                     SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty,
                            ({count_cases}) as match_count,
@@ -1271,59 +1242,35 @@ if st.session_state.page == '대시보드':
                 cursor.execute(sql, tuple(params))
                 all_fetched = cursor.fetchall()
                 
-                # 9개를 가져왔다면? -> "아, 다음 장에 보여줄 게 최소 1개는 있구나!" 하고 체크합니다.
                 has_next = len(all_fetched) > items_per_page
-                urgent_recipes = all_fetched[:items_per_page] # 화면에는 깔끔하게 8개만 자르기
-                
+                urgent_recipes = all_fetched[:items_per_page]
+
                 if urgent_recipes:
                     cols = st.columns(2)
                     for idx, rec in enumerate(urgent_recipes):
                         with cols[idx % 2]:
                             with st.container(border=True):
-                                cat_name = rec.get('cat_name') or "기타"
-                                raw_title = rec.get('title') or "제목 없음"
-                                title = clean_recipe_title(raw_title)
-                                desc = rec.get('description') or ""
-                                recipe_id = rec.get('id')
-                                difficulty = rec.get('difficulty')
+                                title = clean_recipe_title(rec.get('title') or "제목 없음")
                                 match_cnt = rec.get('match_count', 1)
-                                
-                                st.markdown(f"**[{cat_name}] {title}** <span style='color:#EF4444; font-size:12px; font-weight:bold; background-color:#FEE2E2; padding:2px 6px; border-radius:8px;'>🔥임박재료 {match_cnt}개 소진</span>", unsafe_allow_html=True)
-                                if desc: st.caption(desc[:80] + "...")
-                                
-                                # 💡 페이지 번호를 버튼 이름(key)에 넣어서 에러 방지!
-                                if st.button("레시피 보기", key=f"urg_{st.session_state.fridge_page}_{idx}_{recipe_id}"): 
-                                    show_recipe_detail(recipe_id, title, desc, difficulty)
-                                    
-                    # 💡 [핵심 3] 이전/다음 페이지 넘기기 버튼 그리기
-                    st.write("---")
-                    btn_cols = st.columns([1, 2, 1])
+                                st.markdown(f"**{title}** <span style='color:#EF4444; font-size:12px; font-weight:bold;'>🔥 {match_cnt}개 소진</span>", unsafe_allow_html=True)
+                                if st.button("보기", key=f"urg_{st.session_state.fridge_page}_{idx}_{rec['id']}"):
+                                    show_recipe_detail(rec['id'], title, rec.get('description',''), rec.get('difficulty'))
                     
-                    with btn_cols[0]:
-                        if st.session_state.fridge_page > 1:
-                            if st.button("⬅️ 이전 장", use_container_width=True):
-                                st.session_state.fridge_page -= 1
-                                st.rerun()
-                                
-                    with btn_cols[1]:
-                        # 가운데에는 현재 몇 페이지인지 예쁘게 보여줍니다.
-                        st.markdown(f"<div style='text-align:center; color:#64748B; font-size:14px; margin-top:8px; font-weight:600;'>현재 {st.session_state.fridge_page} 페이지</div>", unsafe_allow_html=True)
-                        
-                    with btn_cols[2]:
-                        if has_next: # 아까 몰래 확인한 '다음 장'이 있을 때만 버튼을 띄웁니다!
-                            if st.button("다음 장 ➡️", use_container_width=True):
-                                st.session_state.fridge_page += 1
-                                st.rerun()
-                                
-                else:
+                    # 페이지 버튼 (순서 딱 맞춤)
+                    b_c = st.columns([1, 2, 1])
                     if st.session_state.fridge_page > 1:
-                        st.info("더 이상 레시피가 없습니다.")
-                    else:
-                        st.info("임박 재료를 활용할 수 있는 레시피가 아직 없습니다.")
-        except Exception as e:
-            st.error(f"검색 중 에러가 발생했습니다: {e}")
-        finally: 
-            if 'conn' in locals() and conn.open: conn.close()
+                        if b_c[0].button("⬅️ 이전", use_container_width=True):
+                            st.session_state.fridge_page -= 1
+                            st.rerun()
+                    b_c[1].markdown(f"<div style='text-align:center; margin-top:8px;'>{st.session_state.fridge_page} 페이지</div>", unsafe_allow_html=True)
+                    if has_next:
+                        if b_c[2].button("다음 ➡️", use_container_width=True):
+                            st.session_state.fridge_page += 1
+                            st.rerun()
+                else:
+                    st.info("임박 재료를 활용할 레시피가 부족합니다.")
+        finally:
+            if 'conn' in locals(): conn.close()
 
     # --- 💡 [기능 1+2] 재료명 검색 & 페이지네이션 ---
     if search_query:
