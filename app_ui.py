@@ -734,13 +734,6 @@ imminent_count = 0
 # --- 4. 타이틀 및 로그인 화면 ---
 st.markdown('<h1 class="main-title">SMART KITCHEN</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">PREMIUM REFRIGERATOR MANAGEMENT</p>', unsafe_allow_html=True)
-st.markdown(f"""
-    <div class="dash-card">
-        <h4>지출 {EMO_MONEY}</h4>
-        <h2 style='color: #0F172A; font-weight: 800; margin: 0;'>{monthly_total:,}</h2>
-    </div>
-""", unsafe_allow_html=True)
-# 나머지 재료, 임박 카드도 {EMO_VEGE}, {EMO_ALERT}로 교체!
 
 if not st.session_state.logged_in:
     st.markdown('<div class="dash-card">', unsafe_allow_html=True)
