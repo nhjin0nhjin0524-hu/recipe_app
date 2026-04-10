@@ -1186,8 +1186,7 @@ elif st.session_state.page == '레시피':
 
     # --- 여기서 urgent_names를 미리 만듭니다 ---
     urgent_names = [item['item_name'] for item in pantry_items if get_exp_days(item) <= 3]
-
-	if urgent_names and not search_query:
+    if urgent_names and not search_query:
         st.subheader(f"{icon_alert} 냉장고 파먹기")
 	
     # 검색어가 바뀌면 1페이지로 리셋
