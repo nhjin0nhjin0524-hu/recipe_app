@@ -1172,17 +1172,11 @@ elif st.session_state.page == '레시피':
     # 검색창 아이콘도 변수로 교체
     search_query = st.text_input(f"{icon_search} 찾으시는 요리나 재료가 있나요?", placeholder="예: 김치찌개, 양파, 돼지고기...")
 
-    
-    # 검색어가 바뀌면 1페이지로 리셋
-    if search_query != st.session_state.last_search:
-        st.session_state.recipe_page = 1
-        st.session_state.last_search = search_query
-
+    # 1. 먼저 데이터를 가져오고
     pantry_items = get_fridge_items(st.session_state.user_id)
     today = datetime.now().date()
-    if urgent_names and not search_query:
-        st.subheader(f"{icon_alert} 냉장고 파먹기")
-    # --- (임박 재료 추천 로직) ---
+
+    # 2. get_exp_days 함수와 urgent_names 계산 로직을 '위'로 올리세요!
     def get_exp_days(x):
         val = x.get('expiry_date')
         if not val: return 999
@@ -1190,6 +1184,19 @@ elif st.session_state.page == '레시피':
         else: d = datetime.strptime(str(val), '%Y-%m-%d').date()
         return (d - today).days
 
+    # --- 여기서 urgent_names를 미리 만듭니다 ---
+    urgent_names = [item['item_name'] for item in pantry_items if get_exp_days(item) <= 3]
+
+	if urgent_names and not search_query:
+        st.subheader(f"{icon_alert} 냉장고 파먹기")
+	
+    # 검색어가 바뀌면 1페이지로 리셋
+    if search_query != st.session_state.last_search:
+        st.session_state.recipe_page = 1
+        st.session_state.last_search = search_query
+
+    
+   
     # 👇 [여기가 핵심입니다!] get_exp_days(item) >= 0 조건을 추가해서, 
     # 유통기한이 지나 마이너스(-)가 된 재료는 아예 리스트에 끼지도 못하게 막아버립니다!
     valid_pantry_items = [item for item in pantry_items if item.get('expiry_date') and get_exp_days(item) >= 0]
@@ -1246,10 +1253,6 @@ elif st.session_state.page == '레시피':
                 urgent_materials.append(item)
             if len(urgent_names) >= 2:
                 break
-    # 👆 [수정 끝!] 👆
-
-    if urgent_names and not search_query:
-        st.subheader(f"🚨 냉장고 파먹기")
         
         # 💡 [핵심 1] 사용자가 지금 몇 페이지를 보고 있는지 기억하는 메모장!
         if 'fridge_page' not in st.session_state:
