@@ -1390,7 +1390,7 @@ elif st.session_state.page == '레시피':
 
    
 
-elif st.session_state.page == '식비통계':
+elif st.session_state.page == '식비':
     st.subheader("📈 식비 분석")
     try:
         conn = get_db_connection()
