@@ -725,7 +725,8 @@ if 'user_name' not in st.session_state: st.session_state.user_name = ""
 if 'temp_matched_items' not in st.session_state: st.session_state.temp_matched_items = []
 if 'total_spend' not in st.session_state: st.session_state.total_spend = 0
 if 'spend_data' not in st.session_state: st.session_state.spend_data = pd.DataFrame(columns=['날짜', '금액'])
-
+if 'last_search' not in st.session_state: st.session_state.last_search = ""
+if 'recipe_page' not in st.session_state: st.session_state.recipe_page = 1
 # 💡 에러 방지를 위해 변수들을 미리 '0'으로 만들어둡니다. (NameError 해결!)
 monthly_total = 0
 total_inventory = 0
