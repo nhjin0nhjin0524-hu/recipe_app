@@ -1153,26 +1153,7 @@ if st.session_state.page == '대시보드':
             for item in sorted_items:
                 st.markdown(f'<div class="fridge-item status-red">{item["item_name"]}</div>', unsafe_allow_html=True)
 
-elif st.session_state.page == '레시피':
-    # 💡 1. 이모지를 변수에 안전하게 담아둡니다 (에러 방지 핵심!)
-    icon_fork = "\U0001F374"  # 🍴
-    icon_search = "\U0001F50D" # 🔍
-    icon_alert = "\U0001F6A8"  # 🚨
-
-    # 💡 2. 직접 쓰지 않고 변수 {icon_fork}를 사용합니다.
-    st.markdown(f"""
-        <div style="display: flex; align-items: center; margin-top: -10px; margin-bottom: 15px;">
-            <span style="font-size: 28px; margin-right: 10px;">{icon_fork}</span>
-            <h2 style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 28px; color: #000000; margin: 0; letter-spacing: -0.5px;">
-                맞춤 레시피 추천
-            </h2>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 검색창 아이콘도 변수로 교체
-    search_query = st.text_input(f"{icon_search} 찾으시는 요리나 재료가 있나요?", placeholder="예: 김치찌개, 양파, 돼지고기...")
-
-    # 1. 먼저 데이터를 가져오고
+# 1. 먼저 데이터를 가져오고
     pantry_items = get_fridge_items(st.session_state.user_id)
     today = datetime.now().date()
 
