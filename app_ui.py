@@ -987,69 +987,83 @@ def add_ingredient_popup():
                 time.sleep(1)
                 st.rerun()
 	with t_man:
-        # 💡 [신규] 자주 사는 재료 퀵 버튼
-        st.write("✨ **자주 사는 재료 (퀵 버튼)**")
-        quick_items = [f"{EMO_VEGE} 양파", f"{EMO_BAG} 계란", "🥛 우유", "🥩 삼겹살", "🍞 식빵"]
-        q_cols = st.columns(len(quick_items))
+        # 1. 💡 사용자가 실제로 자주 등록했던 재료 TOP 5 가져오기
+        frequent_items = []
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT custom_name, COUNT(*) as cnt 
+                    FROM user_pantry 
+                    WHERE user_id = %s 
+                    GROUP BY custom_name 
+                    ORDER BY cnt DESC 
+                    LIMIT 5
+                """
+                cursor.execute(sql, (st.session_state.user_id,))
+                rows = cursor.fetchall()
+                frequent_items = [row['custom_name'] for row in rows]
+        except: pass
+        finally: 
+            if 'conn' in locals() and conn.open: conn.close()
+
+        # 데이터가 아예 없는 신규 유저를 위한 기본값
+        if not frequent_items:
+            frequent_items = ["양파", "달걀", "우유", "대파", "마늘"]
+
+        st.write(f"✨ **{st.session_state.user_name}님이 자주 넣는 재료**")
         
-        # 버튼을 누르면 세션 상태에 이름을 임시 저장하게 합니다.
+        # 2. 💡 가로로 버튼 배치
         if 'quick_selected' not in st.session_state:
             st.session_state.quick_selected = ""
 
-        for i, item in enumerate(quick_items):
-            if q_cols[i].button(item, key=f"q_btn_{i}"):
-                # 이모지 제거 후 이름만 추출 (예: "🥦 양파" -> "양파")
-                name_only = item.split(" ")[-1]
-                st.session_state.quick_selected = name_only
+        q_cols = st.columns(5)
+        for i, name in enumerate(frequent_items):
+            if q_cols[i].button(name, key=f"freq_{i}", use_container_width=True):
+                st.session_state.quick_selected = name
+                st.rerun()
 
+        st.write("---")
+
+        # 3. 💡 입력 폼 (칸/줄 완벽 정렬)
         with st.form("pop_man_form", clear_on_submit=True):
             c1, c2, c3 = st.columns([2, 1, 1.5])
+            
             with c1:
-                # 💡 value 값에 퀵 버튼으로 선택한 이름을 연동합니다.
+                # 퀵 버튼으로 선택한 값이 있다면 value에 자동으로 들어갑니다.
                 m_name = st.text_input("🛒 재료 이름", value=st.session_state.quick_selected)
             with c2:
                 m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
             with c3:
+                # 유통기한 기본값은 오늘부터 7일 뒤
                 m_date = st.date_input("⏳ 유통기한", value=datetime.now() + timedelta(days=7))
             
-        with st.form("pop_man_form", clear_on_submit=True):
-            # 💡 [UI 업그레이드] 3칸으로 나누어 이름, 수량, 유통기한을 한 줄에 예쁘게 배치합니다.
-            c1, c2, c3 = st.columns([2, 1, 1.5])
-            with c1:
-                m_name = st.text_input("🛒 재료 이름")
-            with c2:
-                # 💡 숫자만 안전하게 받는 칸 추가!
-                m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
-            with c3:
-                m_date = st.date_input("⏳ 유통기한", value=datetime.now() + timedelta(days=7))
-            
-            # 가격은 아래에 따로 둡니다.
             m_price = st.number_input("💰 구매 가격 (원) - 선택", min_value=0, step=100)
             
-            if st.form_submit_button("➕ 수동으로 냉장고에 추가", use_container_width=True):
+            submit_btn = st.form_submit_button("➕ 냉장고에 추가하기", use_container_width=True)
+            
+            if submit_btn:
                 if m_name:
-                    # 💡 1. 우리가 아까 만든 '스마트 단위 추론기'가 포함된 함수를 호출합니다!
-                    # 수량(amount)만 넘겨주면, 단위는 파이썬이 알아서 찰떡같이 붙여줍니다.
+                    # 재료 추가 (단위는 guess_item_unit이 자동으로 처리)
                     add_fridge_item(st.session_state.user_id, m_name, m_date, amount=m_amount)
                     
-                    # 💡 2. 입력한 가격이 있다면 식비 장부(user_expenses)에도 기록해 줍니다.
+                    # 지출 장부 기록
                     if m_price > 0:
                         try:
-                            conn = get_db_connection() # 👈 들여쓰기 완벽 정렬 완료!
+                            conn = get_db_connection()
                             with conn.cursor() as cursor:
                                 cursor.execute("INSERT INTO user_expenses (user_id, amount, memo, spent_at) VALUES (%s, %s, %s, %s)", 
-                                               (st.session_state.user_id, m_price, m_name, datetime.now().strftime('%Y-%m-%d')))
+                                             (st.session_state.user_id, m_price, m_name, datetime.now().strftime('%Y-%m-%d')))
                             conn.commit()
-                        except Exception as e:
-                            print(f"식비 추가 에러: {e}")
-                        finally:
-                            if 'conn' in locals() and conn.open: conn.close()
-                            
-                    st.success(f"'{m_name}' 추가 완료! 냉장고에 쏙 들어갔어요 🧊")
-                    time.sleep(1)
+                        except: pass
+                        finally: conn.close()
+                    
+                    st.success(f"'{m_name}' 등록 완료! 🧊")
+                    st.session_state.quick_selected = "" # 등록 후엔 퀵 선택 초기화
+                    time.sleep(0.5)
                     st.rerun()
                 else:
-                    st.warning("재료 이름을 입력해주세요.")
+                    st.warning("재료 이름을 입력해 주세요.")
 
 
 # --- 6. 페이지 구현 ---
