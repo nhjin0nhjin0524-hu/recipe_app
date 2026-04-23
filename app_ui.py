@@ -1003,7 +1003,8 @@ def add_ingredient_popup():
                 cursor.execute(sql, (st.session_state.user_id,))
                 rows = cursor.fetchall()
                 frequent_items = [row['custom_name'] for row in rows]
-        except: pass
+        except: 
+            pass
         finally: 
             if 'conn' in locals() and conn.open: conn.close()
 
@@ -1035,7 +1036,6 @@ def add_ingredient_popup():
             with c2:
                 m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
             with c3:
-                # 유통기한 기본값은 오늘부터 7일 뒤
                 m_date = st.date_input("⏳ 유통기한", value=datetime.now() + timedelta(days=7))
             
             m_price = st.number_input("💰 구매 가격 (원) - 선택", min_value=0, step=100)
@@ -1044,10 +1044,8 @@ def add_ingredient_popup():
             
             if submit_btn:
                 if m_name:
-                    # 재료 추가 (단위는 guess_item_unit이 자동으로 처리)
                     add_fridge_item(st.session_state.user_id, m_name, m_date, amount=m_amount)
                     
-                    # 지출 장부 기록
                     if m_price > 0:
                         try:
                             conn = get_db_connection()
@@ -1056,15 +1054,15 @@ def add_ingredient_popup():
                                              (st.session_state.user_id, m_price, m_name, datetime.now().strftime('%Y-%m-%d')))
                             conn.commit()
                         except: pass
-                        finally: conn.close()
+                        finally: 
+                            if 'conn' in locals() and conn.open: conn.close()
                     
                     st.success(f"'{m_name}' 등록 완료! 🧊")
-                    st.session_state.quick_selected = "" # 등록 후엔 퀵 선택 초기화
+                    st.session_state.quick_selected = "" 
                     time.sleep(0.5)
                     st.rerun()
                 else:
                     st.warning("재료 이름을 입력해 주세요.")
-
 
 # --- 6. 페이지 구현 ---
 
