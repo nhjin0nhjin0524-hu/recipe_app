@@ -172,19 +172,37 @@ def edit_ingredient_name(item_id, current_name):
         finally:
             if 'conn' in locals() and conn.open: conn.close()
 
-@st.dialog("⚖️ 수량 관리")
-def edit_ingredient_amount(item_id, current_amount, unit):
+@st.dialog("⚖️ 재료 정보 수정")
+def edit_ingredient_amount(item_id, current_amount, unit, current_expiry):
+    # 1. 수량 수정
     new_amount = st.number_input(f"수량 ({unit})", value=float(current_amount), min_value=0.0, step=1.0)
+    
+    # 2. 💡 [신규] 유통기한 수정 기능 추가!
+    # 기존 날짜가 문자열일 수도 있으니 안전하게 변환해서 넣어줍니다.
+    if isinstance(current_expiry, str):
+        try: current_expiry = datetime.strptime(current_expiry, '%Y-%m-%d').date()
+        except: current_expiry = datetime.now().date()
+        
+    new_expiry = st.date_input("⏳ 유통기한 변경", value=current_expiry)
     
     col1, col2 = st.columns(2)
     with col1:
         if st.button("💾 저장", use_container_width=True):
-            update_fridge_item_amount(item_id, new_amount) 
-            st.rerun()
+            try:
+                conn = get_db_connection()
+                with conn.cursor() as cursor:
+                    # 💡 수량(quantity)과 기한(expires_at)을 동시에 업데이트!
+                    sql = "UPDATE user_pantry SET quantity = %s, expires_at = %s WHERE id = %s"
+                    cursor.execute(sql, (new_amount, new_expiry, item_id))
+                conn.commit()
+                st.rerun()
+            except Exception as e:
+                st.error(f"수정 실패: {e}")
+            finally: conn.close()
             
     with col2:
         if st.button("🗑️ 삭제", type="primary", use_container_width=True):
-            delete_fridge_item(item_id) 
+            delete_fridge_item(item_id)
             st.rerun()
 
 
@@ -968,7 +986,32 @@ def add_ingredient_popup():
                 st.success("✅ 냉장고에 수정한 이름과 단위까지 완벽하게 맞춰서 저장 완료! 🧊")
                 time.sleep(1)
                 st.rerun()
-    with t_man:
+	with t_man:
+        # 💡 [신규] 자주 사는 재료 퀵 버튼
+        st.write("✨ **자주 사는 재료 (퀵 버튼)**")
+        quick_items = [f"{EMO_VEGE} 양파", f"{EMO_BAG} 계란", "🥛 우유", "🥩 삼겹살", "🍞 식빵"]
+        q_cols = st.columns(len(quick_items))
+        
+        # 버튼을 누르면 세션 상태에 이름을 임시 저장하게 합니다.
+        if 'quick_selected' not in st.session_state:
+            st.session_state.quick_selected = ""
+
+        for i, item in enumerate(quick_items):
+            if q_cols[i].button(item, key=f"q_btn_{i}"):
+                # 이모지 제거 후 이름만 추출 (예: "🥦 양파" -> "양파")
+                name_only = item.split(" ")[-1]
+                st.session_state.quick_selected = name_only
+
+        with st.form("pop_man_form", clear_on_submit=True):
+            c1, c2, c3 = st.columns([2, 1, 1.5])
+            with c1:
+                # 💡 value 값에 퀵 버튼으로 선택한 이름을 연동합니다.
+                m_name = st.text_input("🛒 재료 이름", value=st.session_state.quick_selected)
+            with c2:
+                m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
+            with c3:
+                m_date = st.date_input("⏳ 유통기한", value=datetime.now() + timedelta(days=7))
+            
         with st.form("pop_man_form", clear_on_submit=True):
             # 💡 [UI 업그레이드] 3칸으로 나누어 이름, 수량, 유통기한을 한 줄에 예쁘게 배치합니다.
             c1, c2, c3 = st.columns([2, 1, 1.5])
@@ -1551,7 +1594,7 @@ elif st.session_state.page == '냉장고':
                 with col_edit_amt:
                     if st.button("⚖️ 수량 관리", key=f"btn_amt_{item['id']}", use_container_width=True):
                         # 아까 만든 수량/삭제 팝업 띄우기!
-                        edit_ingredient_amount(item['id'], item['amount'], unit_val)
+                        edit_ingredient_amount(item['id'], item['amount'], unit_val, item['expiry_date'])
                 
                 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
