@@ -1003,9 +1003,9 @@ def add_ingredient_popup():
                 cursor.execute(sql, (st.session_state.user_id,))
                 rows = cursor.fetchall()
                 frequent_items = [row['custom_name'] for row in rows]
-        except: 
+        except:
             pass
-        finally: 
+        finally:
             if 'conn' in locals() and conn.open: conn.close()
 
         # 데이터가 아예 없는 신규 유저를 위한 기본값
@@ -1036,6 +1036,7 @@ def add_ingredient_popup():
             with c2:
                 m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
             with c3:
+                # 유통기한 기본값은 오늘부터 7일 뒤
                 m_date = st.date_input("⏳ 유통기한", value=datetime.now() + timedelta(days=7))
             
             m_price = st.number_input("💰 구매 가격 (원) - 선택", min_value=0, step=100)
@@ -1044,8 +1045,10 @@ def add_ingredient_popup():
             
             if submit_btn:
                 if m_name:
+                    # 재료 추가
                     add_fridge_item(st.session_state.user_id, m_name, m_date, amount=m_amount)
                     
+                    # 지출 장부 기록
                     if m_price > 0:
                         try:
                             conn = get_db_connection()
