@@ -1016,7 +1016,7 @@ def add_ingredient_popup():
             # 💡 [UI 업그레이드] 3칸으로 나누어 이름, 수량, 유통기한을 한 줄에 예쁘게 배치합니다.
             c1, c2, c3 = st.columns([2, 1, 1.5])
             with c1:
-                m_name = st.text_input("🛒 재료 이름 (예: 삼겹살)")
+                m_name = st.text_input("🛒 재료 이름")
             with c2:
                 # 💡 숫자만 안전하게 받는 칸 추가!
                 m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
@@ -1188,6 +1188,46 @@ if st.session_state.page == '대시보드':
         st.subheader("재료 관리👜")
         if st.button("➕ 새 재료 추가 (영수증/직접)", use_container_width=True):
             add_ingredient_popup()
+	with t_man:
+        # 💡 [핵심] DB에서 이 사용자가 가장 자주 등록한 재료 TOP 5 가져오기
+        frequent_items = []
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT custom_name, COUNT(*) as cnt 
+                    FROM user_pantry 
+                    WHERE user_id = %s 
+                    GROUP BY custom_name 
+                    ORDER BY cnt DESC 
+                    LIMIT 5
+                """
+                cursor.execute(sql, (st.session_state.user_id,))
+                rows = cursor.fetchall()
+                frequent_items = [row['custom_name'] for row in rows]
+        except Exception as e:
+            print(f"자주 사는 재료 로드 에러: {e}")
+        finally:
+            conn.close()
+
+        # 만약 데이터가 아직 없다면 기본 재료 보여주기 (방어 코드)
+        if not frequent_items:
+            frequent_items = ["양파", "달걀", "대파", "우유", "마늘"]
+
+        st.write(f"✨ **{st.session_state.user_name}님이 자주 넣는 재료**")
+        
+        # 버튼 출력 로직
+        q_cols = st.columns(5)
+        for i, name in enumerate(frequent_items):
+            if q_cols[i].button(name, key=f"freq_{i}"):
+                st.session_state.quick_selected = name
+                st.rerun()
+
+        # ---------------------------------------------------------
+        # 입력 폼 (이전과 동일하지만 value에 quick_selected 연동)
+        with st.form("pop_man_form", clear_on_submit=True):
+            m_name = st.text_input("🛒 재료 이름", value=st.session_state.get('quick_selected', ""))
+            # ... (이하 수량, 날짜 등 기존 혜진님 코드 그대로 유지)
     with r_sec:
         st.subheader("⚠️ 빨리 사용하세요!")
         if all_pantry_items:
@@ -1195,6 +1235,7 @@ if st.session_state.page == '대시보드':
             sorted_items = sorted(all_pantry_items, key=lambda x: x.get('expiry_date') or datetime.max.date())[:4]
             for item in sorted_items:
                 st.markdown(f'<div class="fridge-item status-red">{item["item_name"]}</div>', unsafe_allow_html=True)
+
 
 elif st.session_state.page == '레시피':
     # 1. 변수 설정
