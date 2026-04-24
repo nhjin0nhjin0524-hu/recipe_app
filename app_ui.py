@@ -1422,21 +1422,20 @@ elif st.session_state.page == '냉장고':
                 
                # 💡 (이 위쪽에는 혜진님의 예쁜 HTML 카드 코드가 그대로 살아있어야 합니다!)
 
-                # 💡 복잡했던 4개의 조작 버튼을 지우고, 깔끔하게 '이름 수정', '수량/삭제' 2개의 버튼만 둡니다!
+                # 💡 [여기서부터 덮어쓰기 시작]
                 col_edit_name, col_edit_amt = st.columns(2)
                 
-                with col_edit_amt:
-                    if st.button("⚖️ 수량 관리", key=f"btn_amt_{item['id']}", use_container_width=True):
-        # 💡 마지막에 item['expiry_date']를 꼭 넣어주세요! (총 4개)
-                        edit_ingredient_amount(item['id'], item['amount'], unit_val, item['expiry_date'])
+                with col_edit_name:
+                    if st.button("✏️ 이름 수정", key=f"btn_name_{item['id']}", use_container_width=True):
+                        edit_ingredient_name(item['id'], item['item_name'])
                         
                 with col_edit_amt:
                     if st.button("⚖️ 수량 관리", key=f"btn_amt_{item['id']}", use_container_width=True):
-                        # 아까 만든 수량/삭제 팝업 띄우기!
+                        # 💡 핵심: 인자를 4개(id, amount, unit, expiry_date) 정확히 전달!
                         edit_ingredient_amount(item['id'], item['amount'], unit_val, item['expiry_date'])
                 
                 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-
+               
 
 elif st.session_state.page == '찜':
     # 💡 1. 사용할 이모지들을 안전한 코드로 정의 (이미 상단에 정의했다면 생략 가능)
