@@ -443,24 +443,6 @@ def show_recipe_detail(recipe_id, recipe_title, recipe_desc, difficulty):
     if st.button("닫기", use_container_width=True):
         st.rerun()
 
-@st.dialog("⚖️ 수량 및 삭제 관리")
-def edit_ingredient_amount(item_id, current_amount, unit):
-    # 1. 수량을 입력받는 칸 (소수점도 가능하게 float 사용)
-    new_amount = st.number_input(f"수량 ({unit})", value=float(current_amount), min_value=0.0, step=1.0)
-    
-    # 2. 버튼 2개를 나란히 배치 (저장 / 삭제)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("💾 저장", use_container_width=True):
-            # 혜진님이 이미 만들어두신 수량 업데이트 함수 사용!
-            update_fridge_item_amount(item_id, new_amount) 
-            st.rerun()
-            
-    with col2:
-        # type="primary"를 주면 버튼이 빨간색/파란색으로 강조되어 '삭제' 느낌을 줍니다!
-        if st.button("🗑️ 삭제", type="primary", use_container_width=True):
-            delete_fridge_item(item_id) # 혜진님이 만들어두신 삭제 함수 사용!
-            st.rerun()
 
 # 💡 현재 로그인한 사용자의 즐겨찾기 레시피 목록을 최신순으로 가져오는 함수
 def get_favorite_recipes(user_id):
