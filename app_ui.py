@@ -1425,10 +1425,10 @@ elif st.session_state.page == '냉장고':
                 # 💡 복잡했던 4개의 조작 버튼을 지우고, 깔끔하게 '이름 수정', '수량/삭제' 2개의 버튼만 둡니다!
                 col_edit_name, col_edit_amt = st.columns(2)
                 
-                with col_edit_name:
-                    if st.button("✏️ 이름 수정", key=f"btn_name_{item['id']}", use_container_width=True):
-                        # 아까 만든 이름 수정 팝업 띄우기!
-                        edit_ingredient_name(item['id'], item['item_name'])
+                with col_edit_amt:
+                    if st.button("⚖️ 수량 관리", key=f"btn_amt_{item['id']}", use_container_width=True):
+        # 💡 마지막에 item['expiry_date']를 꼭 넣어주세요! (총 4개)
+                        edit_ingredient_amount(item['id'], item['amount'], unit_val, item['expiry_date'])
                         
                 with col_edit_amt:
                     if st.button("⚖️ 수량 관리", key=f"btn_amt_{item['id']}", use_container_width=True):
