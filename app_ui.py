@@ -804,6 +804,21 @@ if not st.session_state.logged_in:
             else: st.warning("모든 항목을 입력해주세요.")
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
+# (기존 코드) 로그인 안 되어있으면 멈춤
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.stop()
+
+with st.sidebar:
+    st.markdown(f"### 👩‍🍳 {st.session_state.user_name}님의 주방")
+    st.write("스마트 키친과 함께 맛있는 하루 되세요!")
+    st.write("---")
+    
+    if st.button("🚪 로그아웃", type="primary", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.user_id = None
+        st.session_state.user_name = ""
+        st.session_state.page = '대시보드' # 로그아웃 시 첫 화면으로 초기화
+        st.rerun()
 
 # --- 5. 메뉴바 (짧은 이름으로 변경하여 한 줄 유지) ---
 m_list = [f"{EMO_DASH} 홈", f"{EMO_RECIPE} 레시피", f"{EMO_FRIDGE} 냉장고", f"{EMO_CASH} 식비", f"{EMO_HEART} 찜"]
