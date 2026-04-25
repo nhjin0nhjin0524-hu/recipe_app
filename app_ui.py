@@ -37,64 +37,79 @@ EMO_UP = "\U0001F53C"     # 🔼
 st.set_page_config(page_title="AI 냉장고 요리사", layout="wide") # 👈 이 줄 끝에 )가 잘 닫혔는지 꼭 확인!
 
 st.markdown("""
+
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
-    
-    /* 1. 전체 가로 스크롤 원천 봉쇄 */
-    html, body, [data-testid="stAppViewContainer"] {
-        max-width: 100vw;
-        overflow-x: hidden !important;
-        font-family: 'Pretendard', sans-serif;
-    }
 
-    /* 2. 메뉴바(5열) 강제 한 화면 고정 */
-    [data-testid="stHorizontalBlock"] {
-        width: 100% !important;
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important; /* 줄바꿈 금지 */
-        gap: 4px !important; /* 칸 사이 간격 최소화 */
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
 
-    /* 3. 각 컬럼이 화면의 20%를 넘지 못하도록 강제 계산 */
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+
+    .stButton > button { border-radius: 20px; border: 1px solid #E2E8F0; background: white; color: #64748B; font-weight: 600; }
+
+    .stButton > button:hover { border-color: #10B981; color: #10B981; }
+
+    .dash-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #F1F5F9; margin-bottom: 20px; }
+
+    .fridge-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; border-left: 6px solid; }
+
+    .status-red { background-color: #FEF2F2; border-left-color: #EF4444; color: #991B1B; }
+
+    .status-orange { background-color: #FFFBEB; border-left-color: #F59E0B; color: #92400E; }
+
+    .status-green { background-color: #F0FDF4; border-left-color: #10B981; color: #166534; }
+
+    .recipe-card { background: white; border-radius: 16px; border: 1px solid #F1F5F9; overflow: hidden; margin-bottom: 20px; transition: 0.3s; }
+
+    .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
+
+    .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
+
+
+
+    /* 📱 모바일에서도 강제로 가로 배열 유지하기 */
+
     [data-testid="column"] {
-        width: calc(20% - 4px) !important; /* 5칸일 때 정확히 20%씩 배분 */
+
+        width: calc(33.3333% - 1rem) !important;
+
+        flex: 1 1 calc(33.3333% - 1rem) !important;
+
+        min-width: calc(33.3333% - 1rem) !important;
+
+    }
+
+
+
+    /* 메뉴바 5열 강제 고정 */
+
+    div[data-testid="stHorizontalBlock"] > div:nth-child(n) {
+
         min-width: 0px !important;
+
         flex: 1 1 0% !important;
+
     }
 
-    /* 4. 버튼 내 글자가 넘치면 작아지거나 생략되게 처리 */
-    .stButton > button {
-        width: 100% !important;
-        padding: 4px 0px !important;
-        font-size: 10px !important; /* 모바일 가독성을 위해 확 줄임 */
-        letter-spacing: -1px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: clip;
-        border-radius: 8px;
-    }
 
-    /* 5. 대시보드 카드 폭 고정 */
-    .dash-card {
-        width: 100% !important;
-        box-sizing: border-box; /* 패딩이 폭을 늘리지 않게 함 */
-        padding: 12px !important;
-        margin-bottom: 10px;
-    }
 
-    /* 모바일 미세 조정 */
     @media (max-width: 768px) {
-        .main-title { font-size: 22px !important; }
-        .sub-title { font-size: 9px !important; }
-        
-        /* 냉장고/레시피 카드 2열 배열 시 폭 고정 */
-        div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-            /* 2열일 때는 50%, 3열일 때는 33% 등으로 자동 대응되지만 
-               메뉴바가 아닌 일반 카드 섹션도 가로로 안 삐져나가게 함 */
-        }
+
+        .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
+
+        .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
+
+        .dash-card { padding: 5px 2px !important; margin-bottom: 5px !important; border-radius: 8px !important; }
+
+        .dash-card h4 { font-size: 8px !important; margin-bottom: 0px !important; }
+
+        .dash-card h2 { font-size: 13px !important; line-height: 1.1 !important; }
+
+        .stButton > button { font-size: 8px !important; padding: 2px 0px !important; height: 28px !important; min-height: 28px !important; letter-spacing: -1px !important; }
+
     }
+
     </style>
+
 """, unsafe_allow_html=True)
 
 # --- 2. OCR 설정 및 DB 연결 함수 ---
