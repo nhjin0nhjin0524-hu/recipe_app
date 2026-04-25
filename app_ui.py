@@ -37,79 +37,58 @@ EMO_UP = "\U0001F53C"     # 🔼
 st.set_page_config(page_title="AI 냉장고 요리사", layout="wide") # 👈 이 줄 끝에 )가 잘 닫혔는지 꼭 확인!
 
 st.markdown("""
-
     <style>
-
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-
+    
+    /* 기본 버튼 설정 */
     .stButton > button { border-radius: 20px; border: 1px solid #E2E8F0; background: white; color: #64748B; font-weight: 600; }
-
     .stButton > button:hover { border-color: #10B981; color: #10B981; }
-
+    
     .dash-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #F1F5F9; margin-bottom: 20px; }
-
-    .fridge-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; border-left: 6px solid; }
-
-    .status-red { background-color: #FEF2F2; border-left-color: #EF4444; color: #991B1B; }
-
-    .status-orange { background-color: #FFFBEB; border-left-color: #F59E0B; color: #92400E; }
-
-    .status-green { background-color: #F0FDF4; border-left-color: #10B981; color: #166534; }
-
-    .recipe-card { background: white; border-radius: 16px; border: 1px solid #F1F5F9; overflow: hidden; margin-bottom: 20px; transition: 0.3s; }
-
     .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
-
     .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
 
-
-
-    /* 📱 모바일에서도 강제로 가로 배열 유지하기 */
-
+    /* 📱 모바일 메뉴바 강제 5열 가로 배열 및 줄바꿈 방지 */
     [data-testid="column"] {
-
-        width: calc(33.3333% - 1rem) !important;
-
-        flex: 1 1 calc(33.3333% - 1rem) !important;
-
-        min-width: calc(33.3333% - 1rem) !important;
-
+        width: calc(20% - 0.2rem) !important; /* 5열이므로 20%씩 배분 */
+        flex: 1 1 calc(20% - 0.2rem) !important;
+        min-width: calc(20% - 0.2rem) !important;
     }
 
-
-
-    /* 메뉴바 5열 강제 고정 */
-
-    div[data-testid="stHorizontalBlock"] > div:nth-child(n) {
-
-        min-width: 0px !important;
-
-        flex: 1 1 0% !important;
-
+    div[data-testid="stHorizontalBlock"] {
+        gap: 0.2rem !important; /* 버튼 사이 간격을 최소화해서 공간 확보 */
     }
 
-
+    /* 🚨 메뉴 버튼 텍스트 줄바꿈 절대 방지 및 폰트 크기 조절 */
+    .stButton > button p {
+        white-space: nowrap !important;
+        overflow: hidden;
+        text-overflow: clip;
+    }
 
     @media (max-width: 768px) {
-
         .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
-
         .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
-
         .dash-card { padding: 4px 2px !important; margin-bottom: 5px !important; border-radius: 8px !important; }
-
         .dash-card h4 { font-size: 6px !important; margin-bottom: 0px !important; }
-
         .dash-card h2 { font-size: 13px !important; line-height: 1.1 !important; }
-
-        .stButton > button { font-size: 8px !important; padding: 2px 0px !important; height: 28px !important; min-height: 28px !important; letter-spacing: -1px !important; }
-
+        
+        /* 💡 여기가 핵심: 모바일에서 버튼 글씨 크기를 7px까지 줄여서 한 줄 고정 */
+        .stButton > button { 
+            font-size: 7px !important; 
+            padding: 2px 0px !important; 
+            height: 28px !important; 
+            min-height: 28px !important; 
+            letter-spacing: -0.5px !important; 
+        }
+        
+        /* 버튼 안의 텍스트 요소 강제 크기 조정 */
+        .stButton > button div p {
+            font-size: 7px !important;
+        }
     }
-
     </style>
-
 """, unsafe_allow_html=True)
 
 # --- 2. OCR 설정 및 DB 연결 함수 ---
