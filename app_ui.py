@@ -818,6 +818,26 @@ def add_ingredient_popup():
     # --- [탭 2: 직접 입력] ---
     # 팝업 함수 내부의 직접 입력 탭 부분
     with t_man:
+        # --- 💡 [내부 보조 함수] DB에서 재료별 보관 기간 가져오기 ---
+        def get_calculated_expiry(item_name):
+            days = 7  # DB에 정보가 없을 경우 사용할 기본값
+            try:
+                conn = get_db_connection()
+                with conn.cursor() as cursor:
+                    # ingredients 테이블에서 해당 재료의 권장 보관일을 찾습니다.
+                    sql = "SELECT shelf_life_days FROM ingredients WHERE name = %s"
+                    cursor.execute(sql, (item_name,))
+                    result = cursor.fetchone()
+                    if result and result['shelf_life_days']:
+                        days = int(result['shelf_life_days'])
+            except: 
+                pass
+            finally: 
+                if 'conn' in locals() and conn.open: conn.close()
+            
+            # 오늘 날짜 + 권장 기간 = 자동 유통기한 반환
+            return datetime.now().date() + timedelta(days=days)
+
         # 1. 자주 넣는 재료 TOP 5 (DB 분석)
         frequent_items = []
         try:
@@ -833,20 +853,18 @@ def add_ingredient_popup():
 
         if not frequent_items: frequent_items = ["양파", "달걀", "우유", "대파", "마늘"]
 
-        if 'quick_selected' not in st.session_state:
-            st.session_state.quick_selected = ""
-
-        st.write(f"✨ **{st.session_state.user_name}님이 자주 넣는 재료** (클릭 시 즉시 저장)")
+        st.write(f"✨ **{st.session_state.user_name}님이 자주 넣는 재료** (즉시 저장)")
         q_cols = st.columns(5)
         for i, name in enumerate(frequent_items):
-            if q_cols[i].button(name, key=f"freq_btn_{i}", use_container_width=True):
-                # 💡 즉시 저장 로직
-                add_fridge_item(st.session_state.user_id, name, datetime.now() + timedelta(days=7), amount=1.0)
-                st.success(f"'{name}' 등록 완료!")
+            if q_cols[i].button(name, key=f"freq_direct_{i}", use_container_width=True):
+                # 💡 [업그레이드] DB 데이터 기반 날짜 계산 후 저장
+                auto_expiry = get_calculated_expiry(name)
+                add_fridge_item(st.session_state.user_id, name, auto_expiry, amount=1.0)
+                st.success(f"'{name}' 등록 완료! (권장기한 반영: {auto_expiry})")
                 time.sleep(0.5)
                 st.rerun()
 
-        # 2. 카테고리별 아이콘 선택 (클릭 시 즉시 저장)
+        # 2. 카테고리별 아이콘 선택
         categories = {
             "🥩 육류/알류": ["소고기", "돼지고기", "닭고기", "계란", "소시지", "베이컨", "오리고기", "햄"],
             "🥬 필수 채소": ["양파", "대파", "마늘", "고추", "생강", "감자", "고구마", "당근"],
@@ -855,7 +873,7 @@ def add_ingredient_popup():
             "🥛 유제품/냉동": ["우유", "치즈", "요거트", "버터", "식빵", "어묵", "만두", "물"]
         }
 
-        st.write("✨ **종류별로 골라보세요 (클릭 시 즉시 저장)**")
+        st.write("✨ **종류별로 골라보세요 (즉시 저장)**")
         for cat_name, items in categories.items():
             with st.expander(cat_name):
                 for i in range(0, len(items), 4):
@@ -864,11 +882,45 @@ def add_ingredient_popup():
                         if i + j < len(items):
                             item_name = items[i + j]
                             if cols[j].button(item_name, key=f"cat_direct_{cat_name}_{item_name}", use_container_width=True):
-                                # 💡 아이콘 클릭 시 즉시 저장! (기본 유통기한 7일)
-                                add_fridge_item(st.session_state.user_id, item_name, datetime.now() + timedelta(days=7), amount=1.0)
-                                st.success(f"'{item_name}' 추가 완료! 🧊")
+                                # 💡 [업그레이드] 아이콘 클릭 시에도 DB 데이터 기반 날짜 계산
+                                auto_expiry = get_calculated_expiry(item_name)
+                                add_fridge_item(st.session_state.user_id, item_name, auto_expiry, amount=1.0)
+                                st.success(f"'{item_name}' 추가 완료! (기한: {auto_expiry})")
                                 time.sleep(0.5)
                                 st.rerun()
+
+        st.write("---")
+        st.write("⌨️ **상세 정보 입력하여 추가**")
+
+        # 3. 상세 입력 폼 (이전과 동일)
+        with st.form("pop_man_form", clear_on_submit=True):
+            c1, c2, c3 = st.columns([2, 1, 1.5])
+            with c1:
+                m_name = st.text_input("🛒 재료 이름")
+            with c2:
+                m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
+            with c3:
+                m_date = st.date_input("⏳ 유통기한", value=datetime.now() + timedelta(days=7))
+            
+            m_price = st.number_input("💰 구매 가격 (원)", min_value=0, step=100)
+            
+            if st.form_submit_button("➕ 냉장고에 상세 추가", use_container_width=True):
+                if m_name:
+                    add_fridge_item(st.session_state.user_id, m_name, m_date, amount=m_amount)
+                    if m_price > 0:
+                        try:
+                            conn = get_db_connection()
+                            with conn.cursor() as cursor:
+                                cursor.execute("INSERT INTO user_expenses (user_id, amount, memo, spent_at) VALUES (%s, %s, %s, %s)", 
+                                             (st.session_state.user_id, m_price, m_name, datetime.now().strftime('%Y-%m-%d')))
+                            conn.commit()
+                        except: pass
+                        finally: conn.close()
+                    st.success(f"'{m_name}' 등록 완료!")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.warning("재료 이름을 입력해 주세요.")
 
         st.write("---")
         st.write("⌨️ **상세 정보(가격 등) 입력하여 추가**")
