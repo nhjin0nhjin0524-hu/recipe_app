@@ -94,13 +94,13 @@ st.markdown("""
 
     @media (max-width: 768px) {
 
-        .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
+        .main-title { font-size: 18px !important; letter-spacing: -1px !important; }
 
-        .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
+        .sub-title { font-size: 6px !important; margin-bottom: 15px !important; }
 
-        .dash-card { padding: 5px 2px !important; margin-bottom: 5px !important; border-radius: 8px !important; }
+        .dash-card { padding: 4px 2px !important; margin-bottom: 5px !important; border-radius: 8px !important; }
 
-        .dash-card h4 { font-size: 8px !important; margin-bottom: 0px !important; }
+        .dash-card h4 { font-size: 6px !important; margin-bottom: 0px !important; }
 
         .dash-card h2 { font-size: 13px !important; line-height: 1.1 !important; }
 
