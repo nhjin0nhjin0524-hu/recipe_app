@@ -39,51 +39,48 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
     
-    /* 기본 디자인 유지 */
-    .stButton > button { border-radius: 20px; border: 1px solid #E2E8F0; background: white; color: #64748B; font-weight: 600; }
-    .stButton > button:hover { border-color: #10B981; color: #10B981; }
+    /* 1. 메뉴바 5열 가로 배치 강제 고정 */
+    [data-testid="column"] {
+        width: calc(20% - 0.2rem) !important;
+        flex: 1 1 calc(20% - 0.2rem) !important;
+        min-width: calc(20% - 0.2rem) !important;
+    }
+
+    div[data-testid="stHorizontalBlock"] {
+        gap: 0.1rem !important;
+    }
+
+    /* 2. 🚨 [가장 중요] 버튼 내부 '이모지+글자'를 강제로 한 줄로 정렬 */
+    .stButton > button div[data-testid="stMarkdownContainer"] p {
+        display: inline-flex !important; /* 가로로 나열 */
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important; /* 줄바꿈 절대 방지 */
+        gap: 2px !important; /* 이모지와 글자 사이 간격 */
+    }
+
+    /* 기본 디자인 */
+    .stButton > button { border-radius: 20px; border: 1px solid #E2E8F0; background: white; color: #64748B; font-weight: 600; width: 100%; }
     .dash-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #F1F5F9; margin-bottom: 20px; }
     .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
     .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
-
-    /* 📱 모바일 가로 5열 유지 설정 */
-    [data-testid="column"] {
-        width: calc(20% - 0.5rem) !important;
-        flex: 1 1 calc(20% - 0.5rem) !important;
-        min-width: calc(20% - 0.5rem) !important;
-    }
-
-    /* 🚨 [핵심 수정] 버튼 내부 글자가 아래로 떨어지는 현상 방지 */
-    .stButton > button div {
-        display: flex !important;
-        flex-direction: row !important; /* 이모지와 글자를 가로로 */
-        align-items: center !important;
-        justify-content: center !important;
-    }
-
-    .stButton > button p {
-        font-size: 14px; /* PC 기본 크기 */
-        white-space: nowrap !important; /* 줄바꿈 절대 금지 */
-        margin: 0 !important;
-    }
 
     @media (max-width: 768px) {
         .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
         .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
         .dash-card { padding: 4px 2px !important; margin-bottom: 5px !important; border-radius: 8px !important; }
-        .dash-card h4 { font-size: 6px !important; margin-bottom: 0px !important; }
-        .dash-card h2 { font-size: 13px !important; line-height: 1.1 !important; }
         
-        /* 💡 모바일에서 글씨 크기만 8px로 축소 */
-        .stButton > button p {
-            font-size: 8px !important;
-            letter-spacing: -0.8px !important;
+        /* 3. 💡 모바일에서 글씨 크기를 아주 작게 줄여서 열 맞춤 */
+        .stButton > button { 
+            height: 30px !important; 
+            min-height: 30px !important; 
+            padding: 0px !important;
         }
         
-        .stButton > button {
-            height: 30px !important;
-            min-height: 30px !important;
-            padding: 0px !important;
+        .stButton > button div[data-testid="stMarkdownContainer"] p {
+            font-size: 8.5px !important; /* 3글자 재료들을 위해 크기 축소 */
+            letter-spacing: -1px !important; /* 자간 압축 */
         }
     }
     </style>
