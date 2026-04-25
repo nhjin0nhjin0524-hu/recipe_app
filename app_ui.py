@@ -816,6 +816,7 @@ def add_ingredient_popup():
                 except: st.error("분석 중 오류가 발생했습니다.")
 
     # --- [탭 2: 직접 입력] ---
+    # 팝업 함수 내부의 직접 입력 탭 부분
     with t_man:
         # 1. 사용자가 자주 넣는 재료 TOP 5 가져오기
         frequent_items = []
@@ -832,17 +833,23 @@ def add_ingredient_popup():
 
         if not frequent_items: frequent_items = ["양파", "달걀", "우유", "대파", "마늘"]
 
-        st.write(f"✨ **{st.session_state.user_name}님이 자주 넣는 재료**")
+        st.write(f"✨ **{st.session_state.user_name}님이 자주 넣는 재료** (클릭 시 즉시 저장)")
+        
+        # 💡 [핵심 변경] 버튼 클릭 시 바로 저장을 수행합니다.
         q_cols = st.columns(5)
-        if 'quick_selected' not in st.session_state: st.session_state.quick_selected = ""
-
         for i, name in enumerate(frequent_items):
-            if q_cols[i].button(name, key=f"freq_btn_{i}", use_container_width=True):
-                st.session_state.quick_selected = name
+            if q_cols[i].button(name, key=f"freq_direct_{i}", use_container_width=True):
+                # 1) 냉장고 DB에 즉시 추가 (기본 유통기한은 7일 뒤로 설정)
+                default_expiry = datetime.now() + timedelta(days=7)
+                add_fridge_item(st.session_state.user_id, name, default_expiry, amount=1.0)
+                
+                # 2) 저장 성공 알림 및 화면 새로고침
+                st.success(f"'{name}'(이)가 냉장고에 즉시 저장되었습니다! 🧊")
+                time.sleep(0.5)
                 st.rerun()
 
         st.write("---")
-
+		
         with st.form("pop_man_form", clear_on_submit=True):
             c1, c2, c3 = st.columns([2, 1, 1.5])
             with c1:
