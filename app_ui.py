@@ -67,7 +67,7 @@ st.markdown("""
 
 
 
-    .fridge-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; border-left: 6px solid; }
+    .fridge-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-radius: 12px; margin-bottom: 8px; border-left: 6px solid; }
 
 
 
