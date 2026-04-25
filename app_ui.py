@@ -1320,7 +1320,6 @@ elif st.session_state.page == '식비':
     prev_month_str = last_day_prev.strftime('%Y-%m')
     
     # 🚨 지난달 '오늘'과 같은 날짜까지(MTD)의 지출을 계산하기 위한 날짜 설정
-    # 만약 오늘이 31일인데 지난달이 30일까지라면 30일로 맞춤
     compare_day = min(current_day, last_day_prev.day)
 
     try:
@@ -1344,7 +1343,7 @@ elif st.session_state.page == '식비':
             cursor.execute(sql_prev_mtd, (st.session_state.user_id, prev_month_str, compare_day))
             prev_mtd_total = int(cursor.fetchone()['total'] or 0)
 
-            # 3. 차트용 이번 달 전체 내역 가져오기 (이전 코드 유지)
+            # 3. 차트용 이번 달 전체 내역 가져오기
             sql_all = """
                 SELECT spent_at AS date, amount, memo FROM user_expenses 
                 WHERE user_id = %s AND DATE_FORMAT(spent_at, '%%Y-%%m') = %s
@@ -1359,8 +1358,15 @@ elif st.session_state.page == '식비':
     finally:
         if 'conn' in locals() and conn.open: conn.close()
 
+    # 👇👇 [해결 포인트] 여기서 df를 만들어줘야 아래에서 에러가 안 납니다! 👇👇
+    if curr_rows:
+        df = pd.DataFrame(curr_rows)
+        df['날짜'] = pd.to_datetime(df['date']).dt.strftime('%m/%d')
+    else:
+        df = pd.DataFrame(columns=['날짜', 'amount', 'memo'])
+    # 👆👆 ----------------------------------------------------------- 👆👆
+
     # --- [업그레이드된 지표 출력] ---
-    # 지난달 오늘까지 쓴 돈과 이번 달 오늘까지 쓴 돈 비교
     mtd_delta = curr_mtd_total - prev_mtd_total
     
     col1, col2 = st.columns(2)
@@ -1370,7 +1376,7 @@ elif st.session_state.page == '식비':
             label=f"이번 달 지출 (1일~{current_day}일)", 
             value=f"{curr_mtd_total:,}원", 
             delta=f"{mtd_delta:,}원 (전월 동기 대비)",
-            delta_color="inverse" # 지출 증가 시 빨간색 표시
+            delta_color="inverse"
         )
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1396,57 +1402,23 @@ elif st.session_state.page == '식비':
         # --- [기능 2] 카테고리별 지출 비중 분석 ---
         st.markdown("#### 📊 어디에 돈을 가장 많이 썼을까?")
         
-        # 입력된 식재료 이름(memo)을 보고 카테고리를 더 다양하게 분류하는 로직
         def categorize(memo):
             if not memo: return '🛒 기타'
-            
-            # 검색을 위해 공백 제거 및 소문자 변환 (데이터 정규화)
             name = memo.replace(" ", "").lower()
-            
-            # 1. 정육 및 알류
-            if any(k in name for k in ['소', '돼지', '닭', '오리', '삼겹살', '목살', '항정살', '한우', '돈육', '고기', '스테이크', '베이컨', '햄', '소시지', '계란', '달걀', '순두부']): 
-                return '🥩 정육/알류'
-            
-            # 2. 해산물
-            if any(k in name for k in ['생선', '고등어', '갈치', '꽁치', '연어', '광어', '오징어', '새우', '게', '조개', '굴', '전복', '해물', '멸치', '어묵']): 
-                return '🐟 해산물'
-            
-            # 3. 필수 채소 및 구황작물
-            if any(k in name for k in ['양파', '대파', '쪽파', '실파', '마늘', '생강', '고추', '무', '당근', '감자', '고구마', '호박', '애호박', '오이', '가지', '버섯', '옥수수']): 
-                return '🥬 필수채소'
-                
-            # 4. 잎채소 및 콩나물류
-            if any(k in name for k in ['상추', '깻잎', '배추', '양배추', '시금치', '부추', '나물', '콩나물', '숙주', '청경채', '샐러드', '브로콜리', '파프리카']): 
-                return '🥗 잎채소/콩나물'
-            
-            # 5. 유제품 및 베이커리
-            if any(k in name for k in ['우유', '치즈', '요거트', '요구르트', '버터', '생크림', '식빵', '빵', '베이글', '디저트']): 
-                return '🥛 유제품/빵'
-            
-            # 6. 과일류
-            if any(k in name for k in ['사과', '바나나', '포도', '딸기', '수박', '귤', '오렌지', '키위', '참외', '복숭아', '토마토', '망고', '블루베리']): 
-                return '🍎 과일류'
-            
-            # 7. 가공식품 및 면류
-            if any(k in name for k in ['라면', '파스타', '면', '우동', '국수', '떡볶이', '만두', '두부', '참치캔', '스팸', '햇반', '즉석', '냉동', '피자', '치킨']): 
-                return '🍜 가공/면류'
-                
-            # 8. 양념 및 소스
-            if any(k in name for k in ['소금', '설탕', '간장', '된장', '고추장', '쌈장', '식초', '기름', '식용유', '참기름', '후추', '가루', '소스', '케첩', '마요네즈', '올리고당']): 
-                return '🧂 양념/소스'
-                
-            # 9. 음료 및 간식
-            if any(k in name for k in ['커피', '차', '음료', '콜라', '사이다', '주스', '물', '맥주', '소주', '술', '과자', '초콜릿', '사탕', '견과류']): 
-                return '☕ 음료/간식'
-            
+            if any(k in name for k in ['소', '돼지', '닭', '오리', '삼겹살', '목살', '항정살', '한우', '돈육', '고기', '스테이크', '베이컨', '햄', '소시지', '계란', '달걀', '순두부']): return '🥩 정육/알류'
+            if any(k in name for k in ['생선', '고등어', '갈치', '꽁치', '연어', '광어', '오징어', '새우', '게', '조개', '굴', '전복', '해물', '멸치', '어묵']): return '🐟 해산물'
+            if any(k in name for k in ['양파', '대파', '쪽파', '실파', '마늘', '생강', '고추', '무', '당근', '감자', '고구마', '호박', '애호박', '오이', '가지', '버섯', '옥수수']): return '🥬 필수채소'
+            if any(k in name for k in ['상추', '깻잎', '배추', '양배추', '시금치', '부추', '나물', '콩나물', '숙주', '청경채', '샐러드', '브로콜리', '파프리카']): return '🥗 잎채소/콩나물'
+            if any(k in name for k in ['우유', '치즈', '요거트', '요구르트', '버터', '생크림', '식빵', '빵', '베이글', '디저트']): return '🥛 유제품/빵'
+            if any(k in name for k in ['사과', '바나나', '포도', '딸기', '수박', '귤', '오렌지', '키위', '참외', '복숭아', '토마토', '망고', '블루베리']): return '🍎 과일류'
+            if any(k in name for k in ['라면', '파스타', '면', '우동', '국수', '떡볶이', '만두', '두부', '참치캔', '스팸', '햇반', '즉석', '냉동', '피자', '치킨']): return '🍜 가공/면류'
+            if any(k in name for k in ['소금', '설탕', '간장', '된장', '고추장', '쌈장', '식초', '기름', '식용유', '참기름', '후추', '가루', '소스', '케첩', '마요네즈', '올리고당']): return '🧂 양념/소스'
+            if any(k in name for k in ['커피', '차', '음료', '콜라', '사이다', '주스', '물', '맥주', '소주', '술', '과자', '초콜릿', '사탕', '견과류']): return '☕ 음료/간식'
             return '🛒 기타'
             
         df['카테고리'] = df['memo'].apply(categorize)
         cat_df = df.groupby('카테고리')['amount'].sum().reset_index()
         
-        # 💡 모바일 화면을 고려해 차트 2개를 위아래로 깔끔하게 배치합니다.
-        
-        # 1. 카테고리 도넛 차트
         fig_pie = px.pie(cat_df, values='amount', names='카테고리', hole=0.4)
         fig_pie.update_traces(textposition='inside', textinfo='percent+label')
         fig_pie.update_layout(
@@ -1461,7 +1433,7 @@ elif st.session_state.page == '식비':
             
         st.write("---")
         
-        # 2. 날짜별 지출 면적 차트 (기존 기능 유지)
+        # 2. 날짜별 지출 면적 차트
         st.markdown("#### 🗓️ 날짜별 지출 흐름")
         daily_df = df.groupby('날짜')['amount'].sum().reset_index()
         fig_area = px.area(daily_df, x='날짜', y='amount', markers=True)
