@@ -1435,7 +1435,7 @@ elif st.session_state.page == '냉장고':
                         edit_ingredient_name(item['id'], item['item_name'])
                         
                 with col_edit_amt:
-                    if st.button("⚖️ 수량 관리", key=f"btn_amt_{item['id']}", use_container_width=True):
+                    if st.button("⚖️ 재료 관리", key=f"btn_amt_{item['id']}", use_container_width=True):
                         # 💡 핵심: 인자를 4개(id, amount, unit, expiry_date) 정확히 전달!
                         edit_ingredient_amount(item['id'], item['amount'], unit_val, item['expiry_date'])
                 
