@@ -43,79 +43,60 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
     
-    /* 1. 기본 폰트 및 배경 (가독성 좋은 Pretendard 추천) */
-    html, body, [class*="css"] { 
-        font-family: 'Pretendard', 'Inter', sans-serif; 
-        background-color: #F8FAFC; 
+    /* 1. 기본 폰트 및 배경 */
+    html, body, [data-testid="stAppViewContainer"] { 
+        font-family: 'Pretendard', sans-serif; 
+        background-color: #F8FAFC;
+        overflow-x: hidden !important; /* 🚨 가로 스크롤 절대 방지 */
     }
 
-    /* 2. 대시보드 카드 기본 디자인 */
-    .dash-card { 
-        background: white; 
-        padding: 20px; 
-        border-radius: 16px; 
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
-        border: 1px solid #F1F5F9; 
-        margin-bottom: 20px; 
-    }
-
-    /* 3. 메뉴바 5열 강제 고정 및 줄바꿈 방지 (🚨 핵심) */
+    /* 2. 메뉴바 5열 강제 화면 폭 고정 */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        align-items: center !important;
-        gap: 4px !important;
+        width: 100% !important; /* 화면 폭에 딱 맞춤 */
+        gap: 2px !important; /* 간격 최소화 */
     }
 
-    /* 각 컬럼의 폭을 정확히 20%로 배분 */
+    /* 3. 각 칸의 너비를 화면의 딱 1/5(20%)로 강제 고정 */
     [data-testid="column"] {
-        flex: 1 1 20% !important;
+        flex: 0 0 calc(20% - 2px) !important; /* 🚨 너비 20% 초과 금지 */
         min-width: 0px !important;
+        max-width: 20% !important;
     }
 
-    /* 4. 버튼 디자인 및 텍스트 고정 */
+    /* 4. 버튼 디자인 및 텍스트 압축 */
     .stButton > button {
-        width: 100%;
+        width: 100% !important;
         border-radius: 20px;
-        border: 1px solid #E2E8F0;
-        background: white;
-        color: #64748B;
-        font-weight: 600;
-        white-space: nowrap !important; /* 🚨 글자 줄바꿈 절대 금지 */
         padding: 0px !important;
+        height: 32px !important;
+        white-space: nowrap !important; /* 줄바꿈 금지 */
     }
 
-    /* 버튼 내부 텍스트와 이모지 정렬 */
+    /* 버튼 내부 텍스트 정렬 및 크기 (노트북용 기본) */
     .stButton > button div[data-testid="stMarkdownContainer"] p {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px; /* 노트북 기본 크기 */
+        font-size: 11px !important;
         margin: 0 !important;
+        letter-spacing: -0.5px;
     }
 
-    /* 5. 📱 모바일 전용 반응형 미세 조정 (🚨 사진 속 문제 해결) */
+    /* 5. 📱 모바일 전용 미세 조정 (핵심!) */
     @media (max-width: 768px) {
-        .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
-        .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
-        
-        /* 대시보드 카드 숫자/글자 크기 축소 */
-        .dash-card { padding: 8px 4px !important; margin-bottom: 8px !important; }
-        .dash-card h4 { font-size: 9px !important; margin-bottom: 0px !important; }
-        .dash-card h2 { font-size: 14px !important; line-height: 1.1 !important; }
-
-        /* 💡 메뉴 버튼 글자 크기를 확 줄여서 줄바꿈 방지 */
-        .stButton > button {
-            height: 32px !important;
-        }
+        /* 버튼 안의 글씨를 더 줄여서 칸 안에 구겨 넣기 */
         .stButton > button div[data-testid="stMarkdownContainer"] p {
-            font-size: 9px !important; /* 모바일에서 9px로 줄여야 안 깨짐 */
-            letter-spacing: -0.8px !important;
+            font-size: 8px !important; /* 🚨 3글자 단어도 한 줄에 들어가는 크기 */
+            letter-spacing: -1px !important;
         }
+
+        /* 대시보드 카드 숫자/텍스트 크기 축소 */
+        .dash-card { padding: 8px 4px !important; margin-bottom: 8px !important; }
+        .dash-card h4 { font-size: 8px !important; }
+        .dash-card h2 { font-size: 13px !important; }
     }
     </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)ㄴ
 
 
 # --- 2. OCR 설정 및 DB 연결 함수 ---
