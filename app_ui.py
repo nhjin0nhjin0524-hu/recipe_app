@@ -834,7 +834,36 @@ def add_ingredient_popup():
         if not frequent_items: frequent_items = ["양파", "달걀", "우유", "대파", "마늘"]
 
         st.write(f"✨ **{st.session_state.user_name}님이 자주 넣는 재료** (클릭 시 즉시 저장)")
+
+# --- 💡 [신규] 카테고리별 아이콘 선택 섹션 ---
+        st.write("✨ **종류별로 골라보세요 (클릭 시 이름 자동 입력)**")
         
+        # 카테고리별 데이터 정의 (데이터를 대폭 늘렸습니다!)
+        categories = {
+            "🥩 육류/알류": ["소고기", "돼지고기", "닭고기", "계란", "소시지", "베이컨", "오리고기", "햄"],
+            "🥬 채소 (필수/향신)": ["양파", "대파", "마늘", "고추", "생강", "감자", "고구마", "당근"],
+            "🥗 채소 (잎/줄기)": ["상추", "깻잎", "양배추", "시금치", "부추", "청경채", "콩나물", "팽이버섯"],
+            "🍆 채소 (열매/기타)": ["애호박", "오이", "가지", "토마토", "파프리카", "브로콜리", "무", "단호박"],
+            "🍎 과일": ["사과", "바나나", "귤", "딸기", "포도", "참외", "수박", "블루베리"],
+            "🐟 수산물": ["고등어", "오징어", "새우", "연어", "멸치", "바지락", "명란", "굴"],
+            "🥛 유제품/기타": ["우유", "치즈", "두부", "요거트", "버터", "식빵", "어묵", "만두"]
+        }
+
+        # 펼치기 메뉴(Expander)로 깔끔하게 정리
+        for cat_name, items in categories.items():
+            with st.expander(cat_name):
+                # 한 줄에 4개씩 버튼 배치
+                for i in range(0, len(items), 4):
+                    cols = st.columns(4)
+                    for j in range(4):
+                        if i + j < len(items):
+                            item = items[i + j]
+                            if cols[j].button(item, key=f"cat_{cat_name}_{item}", use_container_width=True):
+                                st.session_state.quick_selected = item
+                                st.rerun()
+
+        st.write("---")
+		
         # 💡 [핵심 변경] 버튼 클릭 시 바로 저장을 수행합니다.
         q_cols = st.columns(5)
         for i, name in enumerate(frequent_items):
