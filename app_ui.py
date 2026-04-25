@@ -864,21 +864,8 @@ def add_ingredient_popup():
 
         st.write("---")
 		
-        # 💡 [핵심 변경] 버튼 클릭 시 바로 저장을 수행합니다.
-        q_cols = st.columns(5)
-        for i, name in enumerate(frequent_items):
-            if q_cols[i].button(name, key=f"freq_direct_{i}", use_container_width=True):
-                # 1) 냉장고 DB에 즉시 추가 (기본 유통기한은 7일 뒤로 설정)
-                default_expiry = datetime.now() + timedelta(days=7)
-                add_fridge_item(st.session_state.user_id, name, default_expiry, amount=1.0)
-                
-                # 2) 저장 성공 알림 및 화면 새로고침
-                st.success(f"'{name}'(이)가 냉장고에 즉시 저장되었습니다! 🧊")
-                time.sleep(0.5)
-                st.rerun()
-
-        st.write("---")
-		
+        # 3. 📝 실제 저장 폼 (여기가 중요!)
+        # value=st.session_state.quick_selected 를 통해 클릭한 이름이 입력창에 박힙니다.
         with st.form("pop_man_form", clear_on_submit=True):
             c1, c2, c3 = st.columns([2, 1, 1.5])
             with c1:
@@ -892,21 +879,27 @@ def add_ingredient_popup():
             
             if st.form_submit_button("➕ 냉장고에 추가", use_container_width=True):
                 if m_name:
+                    # 💡 DB 저장 실행
                     add_fridge_item(st.session_state.user_id, m_name, m_date, amount=m_amount)
+                    
                     if m_price > 0:
                         try:
                             conn = get_db_connection()
                             with conn.cursor() as cursor:
-                                cursor.execute("INSERT INTO user_expenses (user_id, amount, memo, spent_at) VALUES (%s, %s, %s, %s)", (st.session_state.user_id, m_price, m_name, datetime.now().strftime('%Y-%m-%d')))
+                                cursor.execute("INSERT INTO user_expenses (user_id, amount, memo, spent_at) VALUES (%s, %s, %s, %s)", 
+                                             (st.session_state.user_id, m_price, m_name, datetime.now().strftime('%Y-%m-%d')))
                             conn.commit()
                         except: pass
-                        finally: conn.close()
+                        finally: 
+                            if 'conn' in locals() and conn.open: conn.close()
+                    
+                    # ✨ 저장 후 세션 초기화 및 리런
                     st.session_state.quick_selected = ""
-                    st.success(f"'{m_name}' 등록 완료! 🧊")
+                    st.success(f"'{m_name}' 등록 완료!")
                     time.sleep(0.5)
                     st.rerun()
                 else:
-                    st.warning("이름을 입력해 주세요.")
+                    st.warning("재료 이름을 입력해 주세요.")
 # --- 6. 페이지 구현 ---
 
 if st.session_state.page == '대시보드':
