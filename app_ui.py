@@ -40,54 +40,47 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
     
-    /* 전체 기본 폰트를 가독성 좋은 Pretendard로 변경 */
     html, body, [class*="css"] { 
         font-family: 'Pretendard', sans-serif; 
-        background-color: #F8FAFC; 
     }
 
-    /* 📱 메뉴바(내비게이션) 최적화: 글자 겹침 방지 */
-    .stButton > button { 
-        border-radius: 12px; 
-        border: 1px solid #E2E8F0; 
-        background: white; 
-        color: #64748B; 
-        font-weight: 600;
-        font-size: 14px; /* 기본 크기 */
-        padding: 0.5rem;
-        white-space: nowrap; /* 글자 줄바꿈 강제 방지 */
+    /* 🚨 [핵심] 모바일에서도 가로 배열(Column) 강제 유지 */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: flex-start !important;
     }
 
-    /* 대시보드 카드 디자인 개선 */
-    .dash-card { 
-        background: white; 
-        padding: 16px; 
-        border-radius: 16px; 
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
-        border: 1px solid #F1F5F9; 
-        margin-bottom: 12px; 
+    /* 각 컬럼의 최소 너비 해제 (메뉴바 5칸용) */
+    [data-testid="column"] {
+        min-width: 0px !important;
+        flex: 1 1 0% !important;
+        padding: 0 2px !important; /* 모바일 옆 간격 최소화 */
     }
 
-    /* 모바일 전용 반응형 스타일 (핵심!) */
+    /* 버튼 내 텍스트가 삐져나가지 않게 폰트 자동 조절 */
+    .stButton > button {
+        width: 100%;
+        padding: 0px 1px !important;
+        font-size: 13px !important; /* 기본 사이즈 */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip; /* 글자 넘치면 자르기 */
+        border-radius: 10px;
+    }
+
+    /* 모바일 전용 미세 조정 */
     @media (max-width: 640px) {
-        /* 타이틀 크기 축소 */
-        .main-title { font-size: 28px !important; letter-spacing: -1px !important; }
-        .sub-title { font-size: 10px !important; margin-bottom: 20px !important; }
-
-        /* 메뉴바 버튼 폰트 크기 축소하여 한 줄 유지 */
-        .stButton > button { 
-            font-size: 11px !important; 
-            padding: 4px 2px !important;
-            letter-spacing: -0.5px !important;
+        .stButton > button {
+            font-size: 10px !important; /* 모바일에서 폰트 더 작게 */
+            height: 35px !important;
         }
-
-        /* 카드 내부 텍스트 크기 조절 */
-        .dash-card h4 { font-size: 12px !important; }
-        .dash-card h2 { font-size: 18px !important; }
-
-        /* 컬럼 간격 좁히기 */
-        [data-testid="column"] {
-            padding: 0 2px !important;
+        .dash-card {
+            padding: 10px !important;
+        }
+        h2, h3 {
+            font-size: 18px !important;
         }
     }
     </style>
