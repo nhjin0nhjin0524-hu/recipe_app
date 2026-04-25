@@ -1308,75 +1308,125 @@ elif st.session_state.page == '레시피':
    
 
 elif st.session_state.page == '식비':
-    st.subheader("📈 식비 분석")
+    st.markdown("### 📈 식비 분석")
+    
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # 💡 [핵심 수정] DATE_FORMAT을 써서 '이번 달(예: 2026-03)' 데이터만 쏙 뽑아옵니다!
+            # 1. 이번 달 데이터 가져오기 (카테고리 분석을 위해 memo 추가)
             current_month = datetime.now().strftime('%Y-%m')
-            sql = """
-                SELECT spent_at AS date, amount 
+            sql_curr = """
+                SELECT spent_at AS date, amount, memo 
                 FROM user_expenses 
                 WHERE user_id = %s AND DATE_FORMAT(spent_at, '%%Y-%%m') = %s
                 ORDER BY spent_at ASC
             """
-            cursor.execute(sql, (st.session_state.user_id, current_month))
-            rows = cursor.fetchall()
+            cursor.execute(sql_curr, (st.session_state.user_id, current_month))
+            curr_rows = cursor.fetchall()
             
-            if rows:
-                df = pd.DataFrame(rows)
-                df['날짜'] = pd.to_datetime(df['date']).dt.strftime('%m/%d')
-                total_val = int(df['amount'].sum()) # 소수점 방지
-            else:
-                df = pd.DataFrame(columns=['날짜', 'amount'])
-                total_val = 0
+            # 2. 지난달 총 지출 가져오기 (비교용)
+            first_day = datetime.now().replace(day=1)
+            last_month = (first_day - timedelta(days=1)).strftime('%Y-%m')
+            sql_last = """
+                SELECT SUM(amount) as total 
+                FROM user_expenses 
+                WHERE user_id = %s AND DATE_FORMAT(spent_at, '%%Y-%%m') = %s
+            """
+            cursor.execute(sql_last, (st.session_state.user_id, last_month))
+            last_row = cursor.fetchone()
+            last_total = int(last_row['total']) if last_row and last_row['total'] else 0
+
     except Exception as e:
         st.error(f"통계 로드 오류: {e}")
-        df = pd.DataFrame()
-        total_val = 0
+        curr_rows = []
+        last_total = 0
     finally:
         if 'conn' in locals() and conn.open: conn.close()
-        
 
-    st.markdown(f"""
-        <div class="dash-card" style="text-align:center;">
-            <p style="color:#64748B; margin-bottom:0;">{st.session_state.user_name}님의 이번 달 지출</p>
-            <h1 style="color:#10B981; margin-top:0;">{total_val:,}원</h1>
-        </div>
-    """, unsafe_allow_html=True)
+    # 데이터 프레임 세팅
+    if curr_rows:
+        df = pd.DataFrame(curr_rows)
+        df['날짜'] = pd.to_datetime(df['date']).dt.strftime('%m/%d')
+        curr_total = int(df['amount'].sum())
+    else:
+        df = pd.DataFrame(columns=['날짜', 'amount', 'memo'])
+        curr_total = 0
+
+    # --- [기능 1] 지난달 대비 지출 추이 ---
+    delta_val = curr_total - last_total
     
-    # 👇 여기서부터 수정된 코드입니다! 👇
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown('<div class="dash-card">', unsafe_allow_html=True)
+        # 💡 st.metric을 사용하면 자동으로 빨간색/초록색 화살표와 함께 증감을 보여줍니다.
+        # 지출이 늘어나면 빨간색이 되도록 delta_color="inverse" 적용!
+        st.metric(
+            label="이번 달 지출", 
+            value=f"{curr_total:,}원", 
+            delta=f"{delta_val:,}원" if last_total > 0 else "비교할 지난달 데이터 없음",
+            delta_color="inverse" 
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    with c2:
+        st.markdown('<div class="dash-card">', unsafe_allow_html=True)
+        st.metric(label="지난 달 지출", value=f"{last_total:,}원")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("---")
+
     if not df.empty:
-        st.write("🗓️ 날짜별 지출 추이")
+        # --- [기능 2] 카테고리별 지출 비중 분석 ---
+        st.markdown("#### 📊 어디에 돈을 가장 많이 썼을까?")
         
-        # 💡 1. 스트림릿 기본 차트 대신 Plotly 면적(Area) 차트 생성
-        fig = px.area(
-            df, 
-            x='날짜', 
-            y='amount',
-            labels={'날짜': '결제일', 'amount': '지출 금액 (원)'},
-            markers=True
+        # 입력된 식재료 이름(memo)을 보고 카테고리를 자동 분류하는 로직
+        def categorize(memo):
+            if not memo: return '기타'
+            name = memo.replace(" ", "")
+            if any(k in name for k in ['소', '돼지', '닭', '고기', '삼겹살', '계란', '햄', '소시지']): return '🥩 정육/알류'
+            if any(k in name for k in ['양파', '파', '마늘', '배추', '상추', '고추', '감자', '고구마', '채소']): return '🥬 채소류'
+            if any(k in name for k in ['우유', '치즈', '요거트', '버터']): return '🥛 유제품'
+            if any(k in name for k in ['사과', '바나나', '딸기', '토마토', '과일']): return '🍎 과일류'
+            if any(k in name for k in ['라면', '면', '두부', '만두', '어묵', '식빵']): return '🍜 가공식품'
+            return '🛒 기타'
+            
+        df['카테고리'] = df['memo'].apply(categorize)
+        cat_df = df.groupby('카테고리')['amount'].sum().reset_index()
+        
+        # 💡 모바일 화면을 고려해 차트 2개를 위아래로 깔끔하게 배치합니다.
+        
+        # 1. 카테고리 도넛 차트
+        fig_pie = px.pie(cat_df, values='amount', names='카테고리', hole=0.4)
+        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+        fig_pie.update_layout(
+            margin=dict(t=10, b=10, l=10, r=10), 
+            showlegend=False, 
+            plot_bgcolor='rgba(0,0,0,0)', 
+            paper_bgcolor='rgba(0,0,0,0)'
         )
         
-        # 💡 2. 테마 컬러(에메랄드 그린) 및 반투명도 적용
-        fig.update_traces(
-            line_color='#10B981', 
-            fillcolor='rgba(16, 185, 129, 0.2)'
-        )
+        with st.container(border=True):
+            st.plotly_chart(fig_pie, use_container_width=True)
+            
+        st.write("---")
         
-        # 💡 3. 배경 투명화 및 안내선 깔끔하게 튜닝
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            margin=dict(l=0, r=0, t=10, b=0),
-            xaxis=dict(showgrid=False, title=None),
+        # 2. 날짜별 지출 면적 차트 (기존 기능 유지)
+        st.markdown("#### 🗓️ 날짜별 지출 흐름")
+        daily_df = df.groupby('날짜')['amount'].sum().reset_index()
+        fig_area = px.area(daily_df, x='날짜', y='amount', markers=True)
+        fig_area.update_traces(line_color='#10B981', fillcolor='rgba(16, 185, 129, 0.2)')
+        fig_area.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)', 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            margin=dict(l=0, r=0, t=10, b=0), 
+            xaxis=dict(showgrid=False, title=None), 
             yaxis=dict(showgrid=True, gridcolor='#F1F5F9', title=None),
             hovermode='x unified'
         )
         
-        # 💡 4. 화면에 출력!
-        st.plotly_chart(fig, use_container_width=True)
-        
+        with st.container(border=True):
+            st.plotly_chart(fig_area, use_container_width=True)
+
     else: 
         st.info("아직 저장된 지출 내역이 없습니다. 영수증을 등록해 보세요!")
 
