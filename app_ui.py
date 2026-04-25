@@ -41,55 +41,65 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
     
-    /* [기본 버튼 설정] */
-    .stButton > button { 
-        border-radius: 20px; 
-        border: 1px solid #E2E8F0; 
-        background: white; 
-        color: #64748B; 
-        font-weight: 600; 
-        white-space: nowrap; /* 🚨 절대 줄바꿈 금지 */
+    /* 1. [메뉴바 5열 강제 고정] 좁아져도 절대 줄바꿈 하지 않음 */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 2px !important; /* 버튼 사이 간격 최소화 */
     }
-    
-    .stButton > button:hover { border-color: #10B981; color: #10B981; }
-    .dash-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #F1F5F9; margin-bottom: 20px; }
-    .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
-    .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
 
-    /* 📱 모바일 가로 배열 유지 */
     [data-testid="column"] {
         flex: 1 1 0% !important;
-        min-width: 0px !important;
+        min-width: 0px !important; /* 폭 제한 해제 */
     }
 
-    /* 메뉴바 5열 강제 고정 및 간격 최적화 */
-    div[data-testid="stHorizontalBlock"] {
-        gap: 0.3rem !important; /* 버튼 사이 간격을 좁혀서 공간 확보 */
+    /* 2. [버튼 텍스트] 줄바꿈 방지 및 폰트 압축 */
+    .stButton > button {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        padding: 2px 0px !important;
+        white-space: nowrap !important;
+        font-size: 11px !important;
+        letter-spacing: -0.8px;
     }
 
-    /* 🚨 모바일 전용 미세 조정 (여기가 핵심!) */
+    /* 3. [제목 크기 축소] 대시보드 내 모든 헤더 크기 줄임 */
+    h1, h2, h3, .stMarkdown h3 {
+        font-size: 18px !important; /* 제목 크기 대폭 축소 */
+        margin-bottom: 10px !important;
+        font-weight: 700 !important;
+    }
+    
+    h4 {
+        font-size: 14px !important;
+        margin: 0 !important;
+    }
+
+    .dash-card h4 { font-size: 11px !important; color: #64748B; } /* 카드 소제목 */
+    .dash-card h2 { font-size: 20px !important; } /* 카드 숫자 */
+
+    /* 4. [모바일 전용 반응형] 더 작은 화면 대응 */
     @media (max-width: 768px) {
-        .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
+        .main-title { font-size: 22px !important; letter-spacing: -1px !important; }
         .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
-        .dash-card { padding: 10px 5px !important; margin-bottom: 8px !important; border-radius: 12px !important; }
         
-        /* 버튼 텍스트 최적화 */
         .stButton > button { 
-            font-size: 9px !important; /* 글씨 크기를 더 줄임 */
-            padding: 0px 2px !important; /* 좌우 여백을 줄임 */
-            height: 32px !important; 
-            min-height: 32px !important; 
-            letter-spacing: -1.2px !important; /* 자간을 좁혀서 한 줄에 다 들어오게 함 */
+            font-size: 9px !important; /* 모바일에서 더 작게 */
+            letter-spacing: -1px !important;
+            height: 32px !important;
         }
-        
-        /* 이모지와 텍스트 사이 간격도 강제로 조정될 수 있도록 설정 */
-        .stButton > button div p {
-            font-size: 9px !important;
-            margin: 0 !important;
+
+        /* 상세 정보 텍스트 크기 */
+        p, span, label {
+            font-size: 12px !important;
         }
     }
     </style>
 """, unsafe_allow_html=True)
+
 # --- 2. OCR 설정 및 DB 연결 함수 ---
 INVOKE_URL = "https://ccse0ls88v.apigw.ntruss.com/custom/v1/50582/7e4ce7a941fe74d6ee3c56235520aaeb568c2b28b69643d6e51e513aa4360eff/document/receipt"
 SECRET_KEY = "cFlNcHRFdXN2VmxUUFZDRGlzTkVSeU5oRW5CcXFIQUY="
