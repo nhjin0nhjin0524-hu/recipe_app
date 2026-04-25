@@ -892,68 +892,8 @@ def add_ingredient_popup():
         st.write("---")
         st.write("⌨️ **상세 정보 입력하여 추가**")
 
-        # 3. 상세 입력 폼 (이전과 동일)
-        with st.form("pop_man_form", clear_on_submit=True):
-            c1, c2, c3 = st.columns([2, 1, 1.5])
-            with c1:
-                m_name = st.text_input("🛒 재료 이름")
-            with c2:
-                m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
-            with c3:
-                m_date = st.date_input("⏳ 유통기한", value=datetime.now() + timedelta(days=7))
-            
-            m_price = st.number_input("💰 구매 가격 (원)", min_value=0, step=100)
-            
-            if st.form_submit_button("➕ 냉장고에 상세 추가", use_container_width=True):
-                if m_name:
-                    add_fridge_item(st.session_state.user_id, m_name, m_date, amount=m_amount)
-                    if m_price > 0:
-                        try:
-                            conn = get_db_connection()
-                            with conn.cursor() as cursor:
-                                cursor.execute("INSERT INTO user_expenses (user_id, amount, memo, spent_at) VALUES (%s, %s, %s, %s)", 
-                                             (st.session_state.user_id, m_price, m_name, datetime.now().strftime('%Y-%m-%d')))
-                            conn.commit()
-                        except: pass
-                        finally: conn.close()
-                    st.success(f"'{m_name}' 등록 완료!")
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.warning("재료 이름을 입력해 주세요.")
 
-        st.write("---")
-        st.write("⌨️ **상세 정보(가격 등) 입력하여 추가**")
-
-        # 3. 상세 입력 폼 (이름이 안 들어가는 버그 수정을 위해 value 연동 강화)
-        with st.form("pop_man_form", clear_on_submit=True):
-            c1, c2, c3 = st.columns([2, 1, 1.5])
-            with c1:
-                m_name = st.text_input("🛒 재료 이름")
-            with c2:
-                m_amount = st.number_input("🔢 수량", min_value=0.1, value=1.0, step=0.5)
-            with c3:
-                m_date = st.date_input("⏳ 유통기한", value=datetime.now() + timedelta(days=7))
-            
-            m_price = st.number_input("💰 구매 가격 (원)", min_value=0, step=100)
-            
-            if st.form_submit_button("➕ 냉장고에 추가 (상세입력)", use_container_width=True):
-                if m_name:
-                    add_fridge_item(st.session_state.user_id, m_name, m_date, amount=m_amount)
-                    if m_price > 0:
-                        try:
-                            conn = get_db_connection()
-                            with conn.cursor() as cursor:
-                                cursor.execute("INSERT INTO user_expenses (user_id, amount, memo, spent_at) VALUES (%s, %s, %s, %s)", 
-                                             (st.session_state.user_id, m_price, m_name, datetime.now().strftime('%Y-%m-%d')))
-                            conn.commit()
-                        except: pass
-                        finally: conn.close()
-                    st.success(f"'{m_name}' 등록 완료!")
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.warning("이름을 입력해 주세요.")
+       
 # --- 6. 페이지 구현 ---
 
 if st.session_state.page == '대시보드':
