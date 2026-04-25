@@ -40,47 +40,58 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
     
-    html, body, [class*="css"] { 
-        font-family: 'Pretendard', sans-serif; 
+    /* 1. 전체 가로 스크롤 원천 봉쇄 */
+    html, body, [data-testid="stAppViewContainer"] {
+        max-width: 100vw;
+        overflow-x: hidden !important;
+        font-family: 'Pretendard', sans-serif;
     }
 
-    /* 🚨 [핵심] 모바일에서도 가로 배열(Column) 강제 유지 */
+    /* 2. 메뉴바(5열) 강제 한 화면 고정 */
     [data-testid="stHorizontalBlock"] {
+        width: 100% !important;
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: flex-start !important;
+        flex-wrap: nowrap !important; /* 줄바꿈 금지 */
+        gap: 4px !important; /* 칸 사이 간격 최소화 */
     }
 
-    /* 각 컬럼의 최소 너비 해제 (메뉴바 5칸용) */
+    /* 3. 각 컬럼이 화면의 20%를 넘지 못하도록 강제 계산 */
     [data-testid="column"] {
+        width: calc(20% - 4px) !important; /* 5칸일 때 정확히 20%씩 배분 */
         min-width: 0px !important;
         flex: 1 1 0% !important;
-        padding: 0 2px !important; /* 모바일 옆 간격 최소화 */
     }
 
-    /* 버튼 내 텍스트가 삐져나가지 않게 폰트 자동 조절 */
+    /* 4. 버튼 내 글자가 넘치면 작아지거나 생략되게 처리 */
     .stButton > button {
-        width: 100%;
-        padding: 0px 1px !important;
-        font-size: 13px !important; /* 기본 사이즈 */
+        width: 100% !important;
+        padding: 4px 0px !important;
+        font-size: 10px !important; /* 모바일 가독성을 위해 확 줄임 */
+        letter-spacing: -1px;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: clip; /* 글자 넘치면 자르기 */
-        border-radius: 10px;
+        text-overflow: clip;
+        border-radius: 8px;
     }
 
-    /* 모바일 전용 미세 조정 */
-    @media (max-width: 640px) {
-        .stButton > button {
-            font-size: 10px !important; /* 모바일에서 폰트 더 작게 */
-            height: 35px !important;
-        }
-        .dash-card {
-            padding: 10px !important;
-        }
-        h2, h3 {
-            font-size: 18px !important;
+    /* 5. 대시보드 카드 폭 고정 */
+    .dash-card {
+        width: 100% !important;
+        box-sizing: border-box; /* 패딩이 폭을 늘리지 않게 함 */
+        padding: 12px !important;
+        margin-bottom: 10px;
+    }
+
+    /* 모바일 미세 조정 */
+    @media (max-width: 768px) {
+        .main-title { font-size: 22px !important; }
+        .sub-title { font-size: 9px !important; }
+        
+        /* 냉장고/레시피 카드 2열 배열 시 폭 고정 */
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+            /* 2열일 때는 50%, 3열일 때는 33% 등으로 자동 대응되지만 
+               메뉴바가 아닌 일반 카드 섹션도 가로로 안 삐져나가게 함 */
         }
     }
     </style>
