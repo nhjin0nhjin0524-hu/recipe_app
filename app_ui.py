@@ -43,57 +43,68 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
     
-    /* 1. 기본 폰트 및 배경 */
-    html, body, [data-testid="stAppViewContainer"] { 
-        font-family: 'Pretendard', sans-serif; 
-        background-color: #F8FAFC;
-        overflow-x: hidden !important; /* 🚨 가로 스크롤 절대 방지 */
+    /* 1. [기본] 전체 화면 가로 스크롤 원천 봉쇄 */
+    html, body, [data-testid="stAppViewContainer"] {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        font-family: 'Pretendard', sans-serif;
     }
 
-    /* 2. 메뉴바 5열 강제 화면 폭 고정 */
-    [data-testid="stHorizontalBlock"] {
+    /* 2. [상단 메뉴바] 5열 강제 한 화면 고정 */
+    div[data-testid="stHorizontalBlock"] {
+        width: 100% !important;
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        width: 100% !important; /* 화면 폭에 딱 맞춤 */
-        gap: 2px !important; /* 간격 최소화 */
+        gap: 2px !important;
     }
 
-    /* 3. 각 칸의 너비를 화면의 딱 1/5(20%)로 강제 고정 */
+    /* 3. [모든 컬럼] 화면 비율에 맞춰 강제 고정 (스크롤 방지) */
     [data-testid="column"] {
-        flex: 0 0 calc(20% - 2px) !important; /* 🚨 너비 20% 초과 금지 */
         min-width: 0px !important;
-        max-width: 20% !important;
+        flex: 1 1 0% !important;
     }
 
-    /* 4. 버튼 디자인 및 텍스트 압축 */
+    /* 4. [버튼 디자인] 글자 크기 축소 및 줄바꿈 금지 */
     .stButton > button {
         width: 100% !important;
-        border-radius: 20px;
         padding: 0px !important;
         height: 32px !important;
-        white-space: nowrap !important; /* 줄바꿈 금지 */
+        white-space: nowrap !important;
+        border-radius: 12px;
     }
 
-    /* 버튼 내부 텍스트 정렬 및 크기 (노트북용 기본) */
     .stButton > button div[data-testid="stMarkdownContainer"] p {
-        font-size: 11px !important;
+        font-size: 11px !important; /* 노트북 기본 */
         margin: 0 !important;
-        letter-spacing: -0.5px;
     }
 
-    /* 5. 📱 모바일 전용 미세 조정 (핵심!) */
+    /* 5. 📱 [모바일 전용 최적화] - 사진 속 대시보드 스크롤 문제 해결 */
     @media (max-width: 768px) {
-        /* 버튼 안의 글씨를 더 줄여서 칸 안에 구겨 넣기 */
+        /* 상단 타이틀 간격 축소 */
+        .main-title { font-size: 20px !important; margin-bottom: 5px !important; }
+        .sub-title { font-size: 8px !important; margin-bottom: 10px !important; }
+
+        /* 메뉴바 글씨 더 작게 */
         .stButton > button div[data-testid="stMarkdownContainer"] p {
-            font-size: 8px !important; /* 🚨 3글자 단어도 한 줄에 들어가는 크기 */
-            letter-spacing: -1px !important;
+            font-size: 8.5px !important;
+            letter-spacing: -1px;
         }
 
-        /* 대시보드 카드 숫자/텍스트 크기 축소 */
-        .dash-card { padding: 8px 4px !important; margin-bottom: 8px !important; }
-        .dash-card h4 { font-size: 8px !important; }
-        .dash-card h2 { font-size: 13px !important; }
+        /* 🚨 대시보드 3열 카드 가로폭 강제 압축 (스크롤 방지 핵심) */
+        .dash-card {
+            padding: 8px 2px !important; /* 내부 여백 최소화 */
+            margin-bottom: 5px !important;
+            border-radius: 8px !important;
+        }
+        
+        .dash-card h4 { font-size: 7px !important; margin: 0 !important; }
+        .dash-card h2 { font-size: 13px !important; margin: 0 !important; }
+        
+        /* 스트림릿 기본 패딩 강제 제거 */
+        [data-testid="column"] {
+            padding: 0 1px !important;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
