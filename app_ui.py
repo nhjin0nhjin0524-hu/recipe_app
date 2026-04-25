@@ -34,37 +34,37 @@ EMO_DOWN = "\U0001F53D"   # 🔽
 EMO_UP = "\U0001F53C"     # 🔼
 
 # --- 1. 페이지 설정 및 디자인 ---
-st.set_page_config(page_title="AI 냉장고 요리사", layout="wide") # 👈 이 줄 끝에 )가 잘 닫혔는지 꼭 확인!
-
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
     
-    /* 기본 버튼 설정 */
+    /* 기본 디자인 유지 */
     .stButton > button { border-radius: 20px; border: 1px solid #E2E8F0; background: white; color: #64748B; font-weight: 600; }
     .stButton > button:hover { border-color: #10B981; color: #10B981; }
-    
     .dash-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #F1F5F9; margin-bottom: 20px; }
     .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
     .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
 
-    /* 📱 모바일 메뉴바 강제 5열 가로 배열 및 줄바꿈 방지 */
+    /* 📱 모바일 가로 5열 유지 설정 */
     [data-testid="column"] {
-        width: calc(20% - 0.2rem) !important; /* 5열이므로 20%씩 배분 */
-        flex: 1 1 calc(20% - 0.2rem) !important;
-        min-width: calc(20% - 0.2rem) !important;
+        width: calc(20% - 0.5rem) !important;
+        flex: 1 1 calc(20% - 0.5rem) !important;
+        min-width: calc(20% - 0.5rem) !important;
     }
 
-    div[data-testid="stHorizontalBlock"] {
-        gap: 0.2rem !important; /* 버튼 사이 간격을 최소화해서 공간 확보 */
+    /* 🚨 [핵심 수정] 버튼 내부 글자가 아래로 떨어지는 현상 방지 */
+    .stButton > button div {
+        display: flex !important;
+        flex-direction: row !important; /* 이모지와 글자를 가로로 */
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    /* 🚨 메뉴 버튼 텍스트 줄바꿈 절대 방지 및 폰트 크기 조절 */
     .stButton > button p {
-        white-space: nowrap !important;
-        overflow: hidden;
-        text-overflow: clip;
+        font-size: 14px; /* PC 기본 크기 */
+        white-space: nowrap !important; /* 줄바꿈 절대 금지 */
+        margin: 0 !important;
     }
 
     @media (max-width: 768px) {
@@ -74,18 +74,16 @@ st.markdown("""
         .dash-card h4 { font-size: 6px !important; margin-bottom: 0px !important; }
         .dash-card h2 { font-size: 13px !important; line-height: 1.1 !important; }
         
-        /* 💡 여기가 핵심: 모바일에서 버튼 글씨 크기를 7px까지 줄여서 한 줄 고정 */
-        .stButton > button { 
-            font-size: 7px !important; 
-            padding: 2px 0px !important; 
-            height: 28px !important; 
-            min-height: 28px !important; 
-            letter-spacing: -0.5px !important; 
+        /* 💡 모바일에서 글씨 크기만 8px로 축소 */
+        .stButton > button p {
+            font-size: 8px !important;
+            letter-spacing: -0.8px !important;
         }
         
-        /* 버튼 안의 텍스트 요소 강제 크기 조정 */
-        .stButton > button div p {
-            font-size: 7px !important;
+        .stButton > button {
+            height: 30px !important;
+            min-height: 30px !important;
+            padding: 0px !important;
         }
     }
     </style>
