@@ -96,7 +96,7 @@ st.markdown("""
         .dash-card h2 { font-size: 13px !important; }
     }
     </style>
-""", unsafe_allow_html=True)ㄴ
+""", unsafe_allow_html=True)
 
 
 # --- 2. OCR 설정 및 DB 연결 함수 ---
