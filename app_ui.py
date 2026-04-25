@@ -40,154 +40,83 @@ st.set_page_config(page_title="AI 냉장고 요리사", layout="wide") # 👈 �
 
 
 st.markdown("""
-
-
-
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
+    
+    /* 1. 기본 폰트 및 배경 (가독성 좋은 Pretendard 추천) */
+    html, body, [class*="css"] { 
+        font-family: 'Pretendard', 'Inter', sans-serif; 
+        background-color: #F8FAFC; 
+    }
 
+    /* 2. 대시보드 카드 기본 디자인 */
+    .dash-card { 
+        background: white; 
+        padding: 20px; 
+        border-radius: 16px; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+        border: 1px solid #F1F5F9; 
+        margin-bottom: 20px; 
+    }
 
+    /* 3. 메뉴바 5열 강제 고정 및 줄바꿈 방지 (🚨 핵심) */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 4px !important;
+    }
 
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-
-
-
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-
-
-
-    .stButton > button { border-radius: 20px; border: 1px solid #E2E8F0; background: white; color: #64748B; font-weight: 600; }
-
-
-
-    .stButton > button:hover { border-color: #10B981; color: #10B981; }
-
-
-
-    .dash-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #F1F5F9; margin-bottom: 20px; }
-
-
-
-    .fridge-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-radius: 12px; margin-bottom: 8px; border-left: 6px solid; }
-
-
-
-    .status-red { background-color: #FEF2F2; border-left-color: #EF4444; color: #991B1B; }
-
-
-
-    .status-orange { background-color: #FFFBEB; border-left-color: #F59E0B; color: #92400E; }
-
-
-
-    .status-green { background-color: #F0FDF4; border-left-color: #10B981; color: #166534; }
-
-
-
-    .recipe-card { background: white; border-radius: 16px; border: 1px solid #F1F5F9; overflow: hidden; margin-bottom: 20px; transition: 0.3s; }
-
-
-
-    .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
-
-
-
-    .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
-
-
-
-
-
-
-
-    /* 📱 모바일에서도 강제로 가로 배열 유지하기 */
-
-
-
+    /* 각 컬럼의 폭을 정확히 20%로 배분 */
     [data-testid="column"] {
-
-
-
-        width: calc(33.3333% - 1rem) !important;
-
-
-
-        flex: 1 1 calc(33.3333% - 1rem) !important;
-
-
-
-        min-width: calc(33.3333% - 1rem) !important;
-
-
-
-    }
-
-
-
-
-
-
-
-    /* 메뉴바 5열 강제 고정 */
-
-
-
-    div[data-testid="stHorizontalBlock"] > div:nth-child(n) {
-
-
-
+        flex: 1 1 20% !important;
         min-width: 0px !important;
-
-
-
-        flex: 1 1 0% !important;
-
-
-
     }
 
+    /* 4. 버튼 디자인 및 텍스트 고정 */
+    .stButton > button {
+        width: 100%;
+        border-radius: 20px;
+        border: 1px solid #E2E8F0;
+        background: white;
+        color: #64748B;
+        font-weight: 600;
+        white-space: nowrap !important; /* 🚨 글자 줄바꿈 절대 금지 */
+        padding: 0px !important;
+    }
 
+    /* 버튼 내부 텍스트와 이모지 정렬 */
+    .stButton > button div[data-testid="stMarkdownContainer"] p {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px; /* 노트북 기본 크기 */
+        margin: 0 !important;
+    }
 
-
-
-
-
+    /* 5. 📱 모바일 전용 반응형 미세 조정 (🚨 사진 속 문제 해결) */
     @media (max-width: 768px) {
-
-
-
         .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
-
-
-
         .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
+        
+        /* 대시보드 카드 숫자/글자 크기 축소 */
+        .dash-card { padding: 8px 4px !important; margin-bottom: 8px !important; }
+        .dash-card h4 { font-size: 9px !important; margin-bottom: 0px !important; }
+        .dash-card h2 { font-size: 14px !important; line-height: 1.1 !important; }
 
-
-
-        .dash-card { padding: 4px 2px !important; margin-bottom: 5px !important; border-radius: 8px !important; }
-
-
-
-        .dash-card h4 { font-size: 6px !important; margin-bottom: 0px !important; }
-
-
-
-        .dash-card h2 { font-size: 13px !important; line-height: 1.1 !important; }
-
-
-
-        .stButton > button { font-size: 8px !important; padding: 2px 0px !important; height: 28px !important; min-height: 28px !important; letter-spacing: -1px !important; }
-
-
-
+        /* 💡 메뉴 버튼 글자 크기를 확 줄여서 줄바꿈 방지 */
+        .stButton > button {
+            height: 32px !important;
+        }
+        .stButton > button div[data-testid="stMarkdownContainer"] p {
+            font-size: 9px !important; /* 모바일에서 9px로 줄여야 안 깨짐 */
+            letter-spacing: -0.8px !important;
+        }
     }
-
-
-
     </style>
-
-
-
 """, unsafe_allow_html=True)
+
 
 # --- 2. OCR 설정 및 DB 연결 함수 ---
 INVOKE_URL = "https://ccse0ls88v.apigw.ntruss.com/custom/v1/50582/7e4ce7a941fe74d6ee3c56235520aaeb568c2b28b69643d6e51e513aa4360eff/document/receipt"
