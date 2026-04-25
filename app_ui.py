@@ -37,81 +37,59 @@ EMO_UP = "\U0001F53C"     # 🔼
 st.set_page_config(page_title="AI 냉장고 요리사", layout="wide") # 👈 이 줄 끝에 )가 잘 닫혔는지 꼭 확인!
 
 st.markdown("""
-
     <style>
-
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-
-    .stButton > button { border-radius: 20px; border: 1px solid #E2E8F0; background: white; color: #64748B; font-weight: 600; }
-
+    
+    /* [기본 버튼 설정] */
+    .stButton > button { 
+        border-radius: 20px; 
+        border: 1px solid #E2E8F0; 
+        background: white; 
+        color: #64748B; 
+        font-weight: 600; 
+        white-space: nowrap; /* 🚨 절대 줄바꿈 금지 */
+    }
+    
     .stButton > button:hover { border-color: #10B981; color: #10B981; }
-
     .dash-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #F1F5F9; margin-bottom: 20px; }
-
-    .fridge-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; border-left: 6px solid; }
-
-    .status-red { background-color: #FEF2F2; border-left-color: #EF4444; color: #991B1B; }
-
-    .status-orange { background-color: #FFFBEB; border-left-color: #F59E0B; color: #92400E; }
-
-    .status-green { background-color: #F0FDF4; border-left-color: #10B981; color: #166534; }
-
-    .recipe-card { background: white; border-radius: 16px; border: 1px solid #F1F5F9; overflow: hidden; margin-bottom: 20px; transition: 0.3s; }
-
     .main-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 52px; color: #000000; text-align: center; margin-bottom: 0px; letter-spacing: -2px; line-height: 1.2; }
-
     .sub-title { font-size: 13px; color: #94A3B8; text-align: center; margin-bottom: 40px; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; }
 
-
-
-    /* 📱 모바일에서도 강제로 가로 배열 유지하기 */
-
+    /* 📱 모바일 가로 배열 유지 */
     [data-testid="column"] {
-
-        width: calc(33.3333% - 1rem) !important;
-
-        flex: 1 1 calc(33.3333% - 1rem) !important;
-
-        min-width: calc(33.3333% - 1rem) !important;
-
-    }
-
-
-
-    /* 메뉴바 5열 강제 고정 */
-
-    div[data-testid="stHorizontalBlock"] > div:nth-child(n) {
-
-        min-width: 0px !important;
-
         flex: 1 1 0% !important;
-
+        min-width: 0px !important;
     }
 
+    /* 메뉴바 5열 강제 고정 및 간격 최적화 */
+    div[data-testid="stHorizontalBlock"] {
+        gap: 0.3rem !important; /* 버튼 사이 간격을 좁혀서 공간 확보 */
+    }
 
-
+    /* 🚨 모바일 전용 미세 조정 (여기가 핵심!) */
     @media (max-width: 768px) {
-
         .main-title { font-size: 24px !important; letter-spacing: -1px !important; }
-
         .sub-title { font-size: 8px !important; margin-bottom: 15px !important; }
-
-        .dash-card { padding: 5px 2px !important; margin-bottom: 5px !important; border-radius: 8px !important; }
-
-        .dash-card h4 { font-size: 8px !important; margin-bottom: 0px !important; }
-
-        .dash-card h2 { font-size: 13px !important; line-height: 1.1 !important; }
-
-        .stButton > button { font-size: 8px !important; padding: 2px 0px !important; height: 28px !important; min-height: 28px !important; letter-spacing: -1px !important; }
-
+        .dash-card { padding: 10px 5px !important; margin-bottom: 8px !important; border-radius: 12px !important; }
+        
+        /* 버튼 텍스트 최적화 */
+        .stButton > button { 
+            font-size: 9px !important; /* 글씨 크기를 더 줄임 */
+            padding: 0px 2px !important; /* 좌우 여백을 줄임 */
+            height: 32px !important; 
+            min-height: 32px !important; 
+            letter-spacing: -1.2px !important; /* 자간을 좁혀서 한 줄에 다 들어오게 함 */
+        }
+        
+        /* 이모지와 텍스트 사이 간격도 강제로 조정될 수 있도록 설정 */
+        .stButton > button div p {
+            font-size: 9px !important;
+            margin: 0 !important;
+        }
     }
-
     </style>
-
 """, unsafe_allow_html=True)
-
 # --- 2. OCR 설정 및 DB 연결 함수 ---
 INVOKE_URL = "https://ccse0ls88v.apigw.ntruss.com/custom/v1/50582/7e4ce7a941fe74d6ee3c56235520aaeb568c2b28b69643d6e51e513aa4360eff/document/receipt"
 SECRET_KEY = "cFlNcHRFdXN2VmxUUFZDRGlzTkVSeU5oRW5CcXFIQUY="
