@@ -879,6 +879,7 @@ def check_recipe_has_allergens(recipe_id, user_allergies):
 
 # ─────────────────────────────────────────────────────────────────
 
+import os
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -1514,27 +1515,22 @@ elif st.session_state.page == '레시피':
     valid_pantry_items = [item for item in pantry_items if item.get('expiry_date') and get_exp_days(item) >= 0]
     all_exp_items = sorted(valid_pantry_items, key=get_exp_days)
 
-    # 💡 [순서 교정] 변수를 미리 하나로 합쳐서 준비합니다
+    # 빨강(≤3일) → 주황(4~7일) → 초록(8일~) 순으로 최대 10개 채우기
     urgent_names = []
-    seen_names = set() 
+    seen_names = set()
 
-    # 진짜 임박한 거 먼저 담기
-    for item in all_exp_items:
-        if get_exp_days(item) <= 3:
-            clean_name = item['item_name'].replace(" ", "") 
-            if clean_name not in seen_names:
-                seen_names.add(clean_name)
-                urgent_names.append(item['item_name'])
-        if len(urgent_names) >= 10: break
-
-    # 임박한 게 너무 없으면 싱싱한 거라도 채우기 (혜진님의 플랜 B)
-    if not urgent_names and all_exp_items:
+    for threshold in [3, 7, 9999]:
         for item in all_exp_items:
+            if get_exp_days(item) > threshold:
+                continue
             clean_name = item['item_name'].replace(" ", "")
             if clean_name not in seen_names:
                 seen_names.add(clean_name)
                 urgent_names.append(item['item_name'])
-            if len(urgent_names) >= 2: break
+            if len(urgent_names) >= 10:
+                break
+        if len(urgent_names) >= 10:
+            break
 
     # 3. 드디어 화면에 출력 (이제 들여쓰기가 밖으로 나와서 무조건 보입니다!)
     if urgent_names and not search_query:
