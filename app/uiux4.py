@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import requests, uuid, time, json, pymysql, re
 import plotly.express as px
@@ -399,36 +400,58 @@ def show_recipe_detail(recipe_id, recipe_title, recipe_desc, difficulty):
             ing_name = ing['name'].strip()
             a_val = str(ing['amount']).strip() if ing['amount'] else ""
             u_val = str(ing['unit_name']).strip() if ing.get('unit_name') else ""
-            
+
+            # 비재료 행 스킵 (목록, 세팅 등)
+            if ing_name in ("목록", "그릇 세팅", "접시 세팅 재료", "인분 세팅", "인분세팅", "그릇세팅", "세팅 재료", "소스"):
+                continue
+
             # 💡 [스마트 필터 0단계] '인분 양 3' 같은 데이터를 예쁜 뱃지로 바꿔줍니다!
             if "인분" in ing_name.replace(" ", ""):
                 portion_num = a_val if a_val else "".join(filter(str.isdigit, ing_name))
                 if not portion_num: portion_num = "1"
                 st.markdown(f"<div style='margin-bottom: 12px; display: inline-block; background-color: #F1F5F9; color: #475569; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 700;'>👨‍👩‍👧‍👦 {portion_num}인분 기준</div>", unsafe_allow_html=True)
-                continue 
-         
-            # 💡 [스마트 필터 1단계] 이름에 잘못 붙어버린 단위 분리
-            words = ing_name.split() 
+                continue
+
+            # 💡 [스마트 필터 1단계] 이름에 붙어버린 단위어 분리
+            # 예: '달걀 개' → ing_name='달걀', u_val='개'
+            #     '식빵 장' → ing_name='식빵', u_val='장'
+            words = ing_name.split()
             if len(words) > 1:
                 last_word = words[-1]
-                common_units = ["모", "단", "줌", "마리", "포기", "스푼", "큰술", "컵", "봉지"]
-                if last_word in common_units:
-                    ing_name = " ".join(words[:-1]) 
-                    if not u_val: u_val = last_word 
+                name_suffix_units = [
+                    "모", "단", "줌", "마리", "포기", "스푼", "큰술", "컵", "봉지",
+                    "개", "줄", "과", "와", "알", "장", "통", "팩", "봉", "타래",
+                    "토막", "덩어리", "조각", "대", "뭉치", "쪽",
+                ]
+                if last_word in name_suffix_units:
+                    ing_name = " ".join(words[:-1])
+                    # 이름에서 분리한 단위어가 더 자연스러우므로 항상 덮어씀
+                    # (DB에 g/ml 같은 부정확한 단위가 있을 때도 대체)
+                    u_val = last_word
                 elif last_word == "반":
                     ing_name = " ".join(words[:-1])
                     a_val = "반 " + a_val if a_val else "반"
 
             # 💡 [스마트 필터 2단계] 단위가 비어있으면 식재료에 맞춰 눈치껏 채워줌!
             if a_val and not u_val:
-                if any(k in ing_name for k in ["양파", "당근", "고추", "피망", "파프리카", "감자", "고구마", "계란", "달걀", "사과", "토마토"]):
-                    u_val = "개" 
-                elif any(k in ing_name for k in ["대파", "쪽파"]):
-                    u_val = "대" 
-                elif any(k in ing_name for k in ["두부"]):
-                    u_val = "모" 
-                elif any(k in ing_name for k in ["소금", "설탕", "간장", "참기름", "들기름", "고춧가루", "된장", "고추장", "쌈장", "식초", "물엿", "올리고당", "맛술", "미림", "다진마늘",  "액젓", "굴소스", "마요네즈", "케첩", "기름", "식용유", "올리브유", "버터"]):
-                    u_val = "큰술" 
+                if any(k in ing_name for k in ["양파", "당근", "고추", "피망", "파프리카", "감자", "고구마",
+                                                "계란", "달걀", "사과", "토마토", "오이", "가지", "호박",
+                                                "애호박", "레몬", "라임", "오렌지", "두부", "순두부",
+                                                "양배추", "브로콜리", "콜리플라워", "로메인", "양상추",
+                                                "표고버섯", "새송이", "느타리버섯", "양송이",
+                                                "스팸", "햄", "소시지", "어묵", "오징어", "새우", "라면",
+                                                "식빵", "또띠아", "만두피", "버터", "스틱버터"]):
+                    u_val = "개"
+                elif any(k in ing_name for k in ["대파", "쪽파", "부추"]):
+                    u_val = "대"
+                elif any(k in ing_name for k in ["삼겹살", "목살", "닭", "돼지고기", "소고기", "다짐육", "불고기"]):
+                    u_val = "g"
+                elif any(k in ing_name for k in ["소금", "설탕", "간장", "참기름", "들기름", "고춧가루", "된장",
+                                                   "고추장", "쌈장", "식초", "물엿", "올리고당", "맛술", "청주",
+                                                   "다진마늘", "간마늘", "간 마늘", "액젓", "굴소스", "마요네즈",
+                                                   "케첩", "식용유", "올리브유", "꿀", "국간장", "진간장", "새우젓",
+                                                   "참깨", "통깨", "깨소금", "후춧가루", "후추"]):
+                    u_val = "큰술"
             
             has_amount = bool(a_val or u_val)
             amount_str = f"{a_val}{u_val}".strip() if has_amount else "적당량"
@@ -1152,6 +1175,22 @@ for i, m in enumerate(m_list):
         page_name = "대시보드" if "홈" in m else m.split(" ")[1]
         st.session_state.page = page_name
 st.write("---")
+
+# 쿠팡 파트너스 배너
+components.html(
+    """
+    <div style="display:flex; justify-content:center; align-items:center; padding:4px 0;">
+      <script src="https://ads-partners.coupang.com/g.js"></script>
+      <script>
+        new PartnersCoupang.G({"id":992342,"template":"carousel","trackingCode":"AF1714853","width":"600","height":"120","tsource":""});
+      </script>
+    </div>
+    <p style="text-align:center; font-size:10px; color:#888; margin-top:2px;">
+      이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+    </p>
+    """,
+    height=145,
+)
 
 import uuid # 코드 맨 위에 이 줄이 있는지 확인해 주세요! (없으면 추가)
 
