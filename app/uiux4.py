@@ -323,6 +323,16 @@ def clean_recipe_title(raw_title):
     return cleaned_text if cleaned_text else raw_title.strip()
 
 
+def format_cost(cost, servings):
+    """estimated_cost를 1인분 기준으로 표시. servings > 1이면 per-serving 계산."""
+    if cost is None:
+        return None
+    s = servings if servings and servings > 1 else None
+    if s:
+        return f"💰 **{int(cost / s):,}원** (1인분)"
+    return f"💰 **{int(cost):,}원**"
+
+
 @st.dialog("🍴 레시피 상세 보기")
 def show_recipe_detail(recipe_id, recipe_title, recipe_desc, difficulty):
     user_id = st.session_state.user_id
@@ -589,7 +599,7 @@ def get_favorite_recipes(user_id):
         with conn.cursor() as cursor:
             # favorites 테이블과 recipes 테이블을 조인(JOIN)해서 필요한 정보만 쏙쏙 뽑아옵니다!
             sql = """
-                SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost
+                SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings
                 FROM favorites f
                 JOIN recipes r ON f.recipe_id = r.id
                 LEFT JOIN recipe_categories c ON r.category_id = c.id
@@ -675,7 +685,7 @@ def get_recipes(search_query=None, category=None):
     try:
         with conn.cursor() as cursor:
             # 💡 [핵심] 'r.id,' 를 추가하여 레시피 번호를 정상적으로 가져옵니다!
-            sql = "SELECT r.id, r.title, r.description, c.name as cat_name, r.estimated_cost FROM recipes r LEFT JOIN recipe_categories c ON r.category_id = c.id WHERE 1=1"
+            sql = "SELECT r.id, r.title, r.description, c.name as cat_name, r.estimated_cost, r.servings FROM recipes r LEFT JOIN recipe_categories c ON r.category_id = c.id WHERE 1=1"
             params = []
             if search_query:
                 # 제목뿐만 아니라 설명에서도 검색되도록 업그레이드했습니다
@@ -696,12 +706,12 @@ def get_recipes_by_budget(min_budget, max_budget):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             sql = """
-                SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost
+                SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings
                 FROM recipes r
                 LEFT JOIN recipe_categories c ON r.category_id = c.id
                 WHERE r.estimated_cost IS NOT NULL
-                  AND r.estimated_cost >= %s
-                  AND r.estimated_cost <= %s
+                  AND COALESCE(r.estimated_cost / NULLIF(r.servings, 0), r.estimated_cost) >= %s
+                  AND COALESCE(r.estimated_cost / NULLIF(r.servings, 0), r.estimated_cost) <= %s
                 ORDER BY RAND()
                 LIMIT 4
             """
@@ -734,7 +744,7 @@ def get_personalized_recipes(user_id):
                 return None
             placeholders = ','.join(['%s'] * len(top_categories))
             cursor.execute(f"""
-                SELECT r.id, r.title, r.description, r.estimated_cost, c.name as cat_name, r.difficulty
+                SELECT r.id, r.title, r.description, r.estimated_cost, r.servings, c.name as cat_name, r.difficulty
                 FROM recipes r
                 LEFT JOIN recipe_categories c ON r.category_id = c.id
                 WHERE r.category_id IN ({placeholders})
@@ -1407,9 +1417,9 @@ if st.session_state.page == '대시보드':
                 recipe_id = r.get('id')
                 with st.container(border=True):
                     st.markdown(f"**🍴 {title}**")
-                    cost = r.get('estimated_cost')
-                    if cost is not None:
-                        st.write(f"💰 **{int(cost):,}원**")
+                    cost_str = format_cost(r.get('estimated_cost'), r.get('servings'))
+                    if cost_str:
+                        st.write(cost_str)
                     if st.button("레시피 보기", key=f"dash_res_{recipe_id}_{idx}", use_container_width=True):
                         show_recipe_detail(recipe_id, title, r.get('description',''), "보통")
         else:
@@ -1431,7 +1441,9 @@ if st.session_state.page == '대시보드':
                 with st.container(border=True):
                     title = clean_recipe_title(rec.get('title',''))
                     st.markdown(f"**{title}**")
-                    st.write(f"💰 **{int(rec.get('estimated_cost', 0)):,}원**")
+                    cost_str = format_cost(rec.get('estimated_cost'), rec.get('servings'))
+                    if cost_str:
+                        st.write(cost_str)
                     if st.button("보기", key=f"bud_btn_{rec['id']}_{idx}"):
                         show_recipe_detail(rec['id'], title, rec.get('description',''), rec.get('difficulty'))
 
@@ -1495,7 +1507,7 @@ elif st.session_state.page == '레시피':
         try:
             with conn.cursor() as cursor:
                 cursor.execute(f"""
-                    SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost,
+                    SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings,
                            n.calories, n.protein, n.sodium, n.fat
                     FROM recipe_nutrition n
                     JOIN recipes r ON r.id = n.recipe_id
@@ -1519,9 +1531,9 @@ elif st.session_state.page == '레시피':
                         recipe_id = rec.get('id')
 
                         st.markdown(f"**{title}**")
-                        cost = rec.get('estimated_cost')
-                        if cost is not None:
-                            st.write(f"💰 **{int(cost):,}원**")
+                        cost_str = format_cost(rec.get('estimated_cost'), rec.get('servings'))
+                        if cost_str:
+                            st.write(cost_str)
 
                         # 해당 영양 수치 강조 표시
                         badge_val = rec.get(col)
@@ -1588,14 +1600,14 @@ elif st.session_state.page == '레시피':
                 params = [f"%{name}%" for name in urgent_names] + [f"%{name}%" for name in urgent_names] + [f"%{urgent_names[0]}%"]
                 
                 sql = f"""
-                    SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost,
+                    SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings,
                            ({count_cases}) as match_count,
                            MAX(CASE WHEN ri.name LIKE %s THEN 1 ELSE 0 END) as has_top_urgent
-                    FROM recipes r 
-                    LEFT JOIN recipe_categories c ON r.category_id = c.id 
+                    FROM recipes r
+                    LEFT JOIN recipe_categories c ON r.category_id = c.id
                     JOIN recipe_ingredients ri ON r.id = ri.recipe_id
                     WHERE {conditions}
-                    GROUP BY r.id, r.title, r.description, c.name, r.difficulty
+                    GROUP BY r.id, r.title, r.description, c.name, r.difficulty, r.servings
                     ORDER BY match_count DESC, has_top_urgent DESC
                     LIMIT {items_per_page + 1} OFFSET {offset} 
                 """
@@ -1613,9 +1625,9 @@ elif st.session_state.page == '레시피':
                                 title = clean_recipe_title(rec.get('title') or "제목 없음")
                                 match_cnt = rec.get('match_count', 1)
                                 st.markdown(f"**{title}** <span style='color:#EF4444; font-size:12px; font-weight:bold;'>🔥 {match_cnt}개 소진</span>", unsafe_allow_html=True)
-                                cost = rec.get('estimated_cost')
-                                if cost is not None:
-                                    st.write(f"💰 **{int(cost):,}원**")
+                                cost_str = format_cost(rec.get('estimated_cost'), rec.get('servings'))
+                                if cost_str:
+                                    st.write(cost_str)
                                 if st.button("보기", key=f"urg_{st.session_state.fridge_page}_{idx}_{rec['id']}"):
                                     show_recipe_detail(rec['id'], title, rec.get('description',''), rec.get('difficulty'))
                     
@@ -1659,7 +1671,7 @@ elif st.session_state.page == '레시피':
                 
                 # 2. 현재 페이지에 해당하는 데이터만 가져오기 (LIMIT, OFFSET 적용)
                 fetch_sql = """
-                    SELECT DISTINCT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost
+                    SELECT DISTINCT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings
                     FROM recipes r
                     LEFT JOIN recipe_categories c ON r.category_id = c.id
                     LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
@@ -1685,9 +1697,9 @@ elif st.session_state.page == '레시피':
                         difficulty = rec.get('difficulty')
                         
                         st.markdown(f"**[{cat_name}] {title}**")
-                        cost = rec.get('estimated_cost')
-                        if cost is not None:
-                            st.write(f"💰 **{int(cost):,}원**")
+                        cost_str = format_cost(rec.get('estimated_cost'), rec.get('servings'))
+                        if cost_str:
+                            st.write(cost_str)
                         st.write(f"<p style='font-size:13px; color:#64748B;'>{desc[:80]}...</p>", unsafe_allow_html=True)
 
                         if st.button("레시피 보기", key=f"view_{recipe_id}", use_container_width=True):
@@ -1734,9 +1746,9 @@ elif st.session_state.page == '레시피':
                         st.markdown(f"**[{cat_name}] {title}**")
                         if allergens:
                             st.markdown(f"<span style='background:#FEF2F2; color:#B91C1C; padding:2px 8px; border-radius:8px; font-size:12px; font-weight:700;'>⚠️ 알레르기: {', '.join(allergens)}</span>", unsafe_allow_html=True)
-                        cost = rec.get('estimated_cost')
-                        if cost is not None:
-                            st.write(f"💰 **{int(cost):,}원**")
+                        cost_str = format_cost(rec.get('estimated_cost'), rec.get('servings'))
+                        if cost_str:
+                            st.write(cost_str)
                         st.write(f"<p style='font-size:13px; color:#64748B;'>{desc[:80]}...</p>", unsafe_allow_html=True)
                         if st.button("레시피 보기", key=f"pers_rec_{recipe_id}_{idx}"):
                             show_recipe_detail(recipe_id, title, desc, difficulty)
@@ -1754,7 +1766,7 @@ elif st.session_state.page == '레시피':
             try:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost
+                        SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings
                         FROM recipes r
                         LEFT JOIN recipe_categories c ON r.category_id = c.id
                         ORDER BY RAND()
@@ -1777,9 +1789,9 @@ elif st.session_state.page == '레시피':
                         st.markdown(f"**[{cat_name}] {title}**")
                         if allergens:
                             st.markdown(f"<span style='background:#FEF2F2; color:#B91C1C; padding:2px 8px; border-radius:8px; font-size:12px; font-weight:700;'>⚠️ 알레르기: {', '.join(allergens)}</span>", unsafe_allow_html=True)
-                        cost = rec.get('estimated_cost')
-                        if cost is not None:
-                            st.write(f"💰 **{int(cost):,}원**")
+                        cost_str = format_cost(rec.get('estimated_cost'), rec.get('servings'))
+                        if cost_str:
+                            st.write(cost_str)
                         st.write(f"<p style='font-size:13px; color:#64748B;'>{desc[:80]}...</p>", unsafe_allow_html=True)
                         if st.button("레시피 보기", key=f"rand_rec_{recipe_id}_{idx}"):
                             show_recipe_detail(recipe_id, title, desc, difficulty)
@@ -2058,9 +2070,9 @@ elif st.session_state.page == '찜':
                     st.markdown(f"**❤️ [{cat_name}] {title}**")
                     if allergens:
                         st.markdown(f"<span style='background:#FEF2F2; color:#B91C1C; padding:2px 8px; border-radius:8px; font-size:12px; font-weight:700;'>⚠️ 알레르기: {', '.join(allergens)}</span>", unsafe_allow_html=True)
-                    cost = rec.get('estimated_cost')
-                    if cost is not None:
-                        st.write(f"💰 **{int(cost):,}원**")
+                    cost_str = format_cost(rec.get('estimated_cost'), rec.get('servings'))
+                    if cost_str:
+                        st.write(cost_str)
 
                     if desc:
                         short_desc = desc[:80] + ('...' if len(desc) > 80 else '')
