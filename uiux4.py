@@ -513,17 +513,12 @@ def show_recipe_detail(recipe_id, recipe_title, recipe_desc, difficulty):
 
     components.html(
         """
-        <div style="display:flex; justify-content:center; align-items:center; padding:4px 0;">
-          <script src="https://ads-partners.coupang.com/g.js"></script>
-          <script>
-            new PartnersCoupang.G({"id":992342,"template":"carousel","trackingCode":"AF1714853","width":"600","height":"120","tsource":""});
-          </script>
-        </div>
-        <p style="text-align:center; font-size:10px; color:#888; margin-top:2px;">
+        <iframe src="https://coupa.ng/cnbUZg" width="100%" height="75" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
+        <p style="text-align:center; font-size:10px; color:#888; margin-top:4px;">
           이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
         </p>
         """,
-        height=155,
+        height=100,
     )
 
     # 👇👇👇 여기서부터 팝업창 맨 아래에 들어갈 [요리 완료] 버튼 기능입니다! 👇👇👇
