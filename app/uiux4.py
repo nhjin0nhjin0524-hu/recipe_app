@@ -689,21 +689,23 @@ def toggle_favorite(user_id, recipe_id, current_status):
         print(f"즐겨찾기 토글 에러: {e}")
     finally:
         if 'conn' in locals() and conn.open: conn.close()
-def get_recipes(search_query=None, category=None):
+def get_recipes(search_query=None, category=None, avoided=None):
     CATEGORIES = ['국/탕', '찌개/전골', '볶음', '구이', '튀김', '무침/나물', '찜', '면/파스타', '밥/덮밥', '전/부침', '간식/디저트', '기타']
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 💡 [핵심] 'r.id,' 를 추가하여 레시피 번호를 정상적으로 가져옵니다!
             sql = "SELECT r.id, r.title, r.description, c.name as cat_name, r.estimated_cost, r.servings FROM recipes r LEFT JOIN recipe_categories c ON r.category_id = c.id WHERE 1=1"
             params = []
             if search_query:
-                # 제목뿐만 아니라 설명에서도 검색되도록 업그레이드했습니다
                 sql += " AND (r.title LIKE %s OR r.description LIKE %s)"
                 params.extend([f"%{search_query}%", f"%{search_query}%"])
             if category and category in CATEGORIES:
                 sql += " AND c.name = %s"
                 params.append(category)
+            if avoided:
+                conds = " OR ".join(["ri_av.name LIKE %s"] * len(avoided))
+                sql += f" AND r.id NOT IN (SELECT recipe_id FROM recipe_ingredients ri_av WHERE {conds})"
+                params.extend([f"%{v}%" for v in avoided])
             sql += " LIMIT 20"
             cursor.execute(sql, params)
             return cursor.fetchall()
@@ -711,21 +713,28 @@ def get_recipes(search_query=None, category=None):
 
 # 💡 [예산 검색용] DB의 'estimated_cost' 컬럼을 활용해 예산 내의 레시피만 초고속으로 가져옵니다!
 # 💡 [예산 검색용] 매번 새로운 레시피가 나오도록 RAND()를 적용했습니다!
-def get_recipes_by_budget(min_budget, max_budget):
+def get_recipes_by_budget(min_budget, max_budget, avoided=None):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            sql = """
+            params = [min_budget, max_budget]
+            av_sql = ""
+            if avoided:
+                conds = " OR ".join(["ri_av.name LIKE %s"] * len(avoided))
+                av_sql = f"AND r.id NOT IN (SELECT recipe_id FROM recipe_ingredients ri_av WHERE {conds})"
+                params.extend([f"%{v}%" for v in avoided])
+            sql = f"""
                 SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings
                 FROM recipes r
                 LEFT JOIN recipe_categories c ON r.category_id = c.id
                 WHERE r.estimated_cost IS NOT NULL
                   AND COALESCE(r.estimated_cost / NULLIF(r.servings, 0), r.estimated_cost) >= %s
                   AND COALESCE(r.estimated_cost / NULLIF(r.servings, 0), r.estimated_cost) <= %s
+                  {av_sql}
                 ORDER BY RAND()
                 LIMIT 4
             """
-            cursor.execute(sql, (min_budget, max_budget))
+            cursor.execute(sql, params)
             return cursor.fetchall()
     except Exception as e:
         print(f"예산 레시피 로드 에러: {e}")
@@ -877,6 +886,32 @@ def save_user_allergies(user_id, allergies):
         conn.commit()
     except Exception as e:
         print(f"알레르기 저장 에러: {e}")
+    finally:
+        if 'conn' in locals() and conn.open: conn.close()
+
+def get_user_avoided_ingredients(user_id):
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT avoided_ingredients FROM users WHERE id = %s", (user_id,))
+            row = cursor.fetchone()
+            if row and row['avoided_ingredients']:
+                return json.loads(row['avoided_ingredients'])
+            return []
+    except:
+        return []
+    finally:
+        if 'conn' in locals() and conn.open: conn.close()
+
+def save_user_avoided_ingredients(user_id, ingredients):
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE users SET avoided_ingredients = %s WHERE id = %s",
+                          (json.dumps(ingredients, ensure_ascii=False) if ingredients else None, user_id))
+        conn.commit()
+    except Exception as e:
+        print(f"기피재료 저장 에러: {e}")
     finally:
         if 'conn' in locals() and conn.open: conn.close()
 
@@ -1184,6 +1219,24 @@ with st.sidebar:
         st.rerun()
     st.write("---")
 
+    # 기피 재료 설정
+    st.markdown("**🚫 기피 재료 설정**")
+    if 'user_avoided' not in st.session_state:
+        st.session_state.user_avoided = get_user_avoided_ingredients(st.session_state.user_id)
+    avoided_input = st.text_input(
+        "먹기 싫은 재료를 쉼표로 구분해서 입력하세요",
+        value=", ".join(st.session_state.user_avoided),
+        placeholder="예: 고수, 마늘, 양파",
+        label_visibility="collapsed"
+    )
+    new_avoided = [x.strip() for x in avoided_input.split(",") if x.strip()]
+    if new_avoided != st.session_state.user_avoided:
+        save_user_avoided_ingredients(st.session_state.user_id, new_avoided)
+        st.session_state.user_avoided = new_avoided
+        st.success("기피 재료가 저장됐어요!")
+        st.rerun()
+    st.write("---")
+
     if st.button("🚪 로그아웃", type="primary", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.user_id = None
@@ -1467,7 +1520,8 @@ if st.session_state.page == '대시보드':
     st.subheader("💰 예산 맞춤 가성비 레시피")
     min_budget, max_budget = st.slider("한 끼 예산 범위 설정 (원)", min_value=1000, max_value=30000, value=(5000, 15000), step=1000)
     if st.button("🔄 조건에 맞는 레시피 찾기", type="primary", use_container_width=True):
-        st.session_state.budget_recipes = get_recipes_by_budget(min_budget, max_budget)
+        av = st.session_state.get('user_avoided', [])
+        st.session_state.budget_recipes = get_recipes_by_budget(min_budget, max_budget, avoided=av)
         st.session_state.budget_amount = (min_budget, max_budget)
 
     if 'budget_recipes' in st.session_state and st.session_state.budget_recipes:
@@ -1500,6 +1554,20 @@ if st.session_state.page == '대시보드':
 
 
 elif st.session_state.page == '레시피':
+    # 기피 재료 로드
+    if 'user_avoided' not in st.session_state:
+        st.session_state.user_avoided = get_user_avoided_ingredients(st.session_state.user_id)
+    user_avoided = st.session_state.user_avoided
+
+    # 기피 재료 SQL 서브쿼리 헬퍼
+    def avoided_subquery(alias="r"):
+        if not user_avoided:
+            return "", []
+        conditions = " OR ".join(["ri_av.name LIKE %s"] * len(user_avoided))
+        sql = f"AND {alias}.id NOT IN (SELECT recipe_id FROM recipe_ingredients ri_av WHERE {conditions})"
+        params = [f"%{v}%" for v in user_avoided]
+        return sql, params
+
     # 1. 변수 설정
     icon_fork = "\U0001F374"
     icon_search = "\U0001F50D"
@@ -1539,6 +1607,7 @@ elif st.session_state.page == '레시피':
     if active_filter and not search_query:
         col, op, val = active_filter
         op_sql = "<" if op == "<" else ">"
+        av_sql, av_params = avoided_subquery("r")
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
@@ -1548,10 +1617,10 @@ elif st.session_state.page == '레시피':
                     FROM recipe_nutrition n
                     JOIN recipes r ON r.id = n.recipe_id
                     LEFT JOIN recipe_categories c ON r.category_id = c.id
-                    WHERE n.{col} {op_sql} %s
+                    WHERE n.{col} {op_sql} %s {av_sql}
                     ORDER BY n.{col} {'ASC' if op == '<' else 'DESC'}
                     LIMIT 20
-                """, (val,))
+                """, tuple([val] + av_params))
                 filtered = cursor.fetchall()
         finally:
             conn.close()
@@ -1634,7 +1703,8 @@ elif st.session_state.page == '레시피':
                 conditions = " OR ".join(["ri.name LIKE %s"] * len(urgent_names))
                 count_cases = " + ".join(["MAX(CASE WHEN ri.name LIKE %s THEN 1 ELSE 0 END)"] * len(urgent_names))
                 params = [f"%{name}%" for name in urgent_names] + [f"%{name}%" for name in urgent_names] + [f"%{urgent_names[0]}%"]
-                
+                av_sql, av_params = avoided_subquery("r")
+
                 sql = f"""
                     SELECT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings,
                            ({count_cases}) as match_count,
@@ -1642,12 +1712,12 @@ elif st.session_state.page == '레시피':
                     FROM recipes r
                     LEFT JOIN recipe_categories c ON r.category_id = c.id
                     JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-                    WHERE {conditions}
+                    WHERE {conditions} {av_sql}
                     GROUP BY r.id, r.title, r.description, c.name, r.difficulty, r.servings
                     ORDER BY match_count DESC, has_top_urgent DESC
-                    LIMIT {items_per_page + 1} OFFSET {offset} 
+                    LIMIT {items_per_page + 1} OFFSET {offset}
                 """
-                cursor.execute(sql, tuple(params))
+                cursor.execute(sql, tuple(params + av_params))
                 all_fetched = cursor.fetchall()
                 
                 has_next = len(all_fetched) > items_per_page
@@ -1689,32 +1759,31 @@ elif st.session_state.page == '레시피':
         items_per_page = 6 # 한 페이지당 보여줄 레시피 개수 (수정 가능!)
         offset = (st.session_state.recipe_page - 1) * items_per_page
         
+        av_sql, av_params = avoided_subquery("r")
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
                 search_kw = f"%{search_query}%"
-                
-                # 1. 총 검색 결과 개수 파악 (재료 테이블 JOIN)
-                count_sql = """
+
+                count_sql = f"""
                     SELECT COUNT(DISTINCT r.id) as total
                     FROM recipes r
                     LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-                    WHERE r.title LIKE %s OR r.description LIKE %s OR ri.name LIKE %s
+                    WHERE (r.title LIKE %s OR r.description LIKE %s OR ri.name LIKE %s) {av_sql}
                 """
-                cursor.execute(count_sql, (search_kw, search_kw, search_kw))
+                cursor.execute(count_sql, tuple([search_kw, search_kw, search_kw] + av_params))
                 total_recipes = cursor.fetchone()['total']
                 total_pages = (total_recipes + items_per_page - 1) // items_per_page
-                
-                # 2. 현재 페이지에 해당하는 데이터만 가져오기 (LIMIT, OFFSET 적용)
-                fetch_sql = """
+
+                fetch_sql = f"""
                     SELECT DISTINCT r.id, r.title, r.description, c.name as cat_name, r.difficulty, r.estimated_cost, r.servings
                     FROM recipes r
                     LEFT JOIN recipe_categories c ON r.category_id = c.id
                     LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-                    WHERE r.title LIKE %s OR r.description LIKE %s OR ri.name LIKE %s
+                    WHERE (r.title LIKE %s OR r.description LIKE %s OR ri.name LIKE %s) {av_sql}
                     LIMIT %s OFFSET %s
                 """
-                cursor.execute(fetch_sql, (search_kw, search_kw, search_kw, items_per_page, offset))
+                cursor.execute(fetch_sql, tuple([search_kw, search_kw, search_kw] + av_params + [items_per_page, offset]))
                 recipes = cursor.fetchall()
         finally: conn.close()
 
