@@ -973,23 +973,23 @@ def get_fridge_items(user_id):
 
 # 💡 2. 재료 새로 추가하기
 # 💡 [업그레이드] 재료를 추가할 때 단위가 없으면 스마트 추론기를 돌려서 채워 넣습니다!
-def add_fridge_item(user_id, item_name, expiry_date, amount=1, unit=None):
+def add_fridge_item(user_id, item_name, expiry_date, amount=1, unit=None, purchase_price=None):
     try:
         # 사용자가 단위를 입력하지 않았다면, 이름표를 보고 자동으로 단위를 맞춥니다.
         if not unit or unit == '개':
             unit = guess_item_unit(item_name)
-            
+
         # g이나 ml 단위인 경우, 수량(amount)이 1로 들어오면 이상하므로 기본값을 100으로 세팅해줍니다.
         if unit in ["g", "ml"] and amount == 1:
             amount = 100
-            
+
         conn = get_db_connection()
         with conn.cursor() as cursor:
             sql = """
-                INSERT INTO user_pantry (user_id, custom_name, expires_at, quantity, unit, is_finished) 
-                VALUES (%s, %s, %s, %s, %s, 0)
+                INSERT INTO user_pantry (user_id, custom_name, expires_at, quantity, unit, purchase_price, is_finished)
+                VALUES (%s, %s, %s, %s, %s, %s, 0)
             """
-            cursor.execute(sql, (user_id, item_name, expiry_date, amount, unit))
+            cursor.execute(sql, (user_id, item_name, expiry_date, amount, unit, purchase_price if purchase_price else None))
         conn.commit()
     except Exception as e:
         print(f"냉장고 추가 에러: {e}")
@@ -1324,11 +1324,15 @@ def add_ingredient_popup():
             man_amount = st.number_input("수량", min_value=0.1, value=1.0, step=0.5, key="man_amount")
         with man_col2:
             man_unit = st.selectbox("단위", ["개", "g", "ml", "컵", "큰술", "작은술"], key="man_unit")
-        man_expiry = st.date_input("보관기한", value=datetime.now().date() + timedelta(days=7), key="man_expiry")
+        man_col3, man_col4 = st.columns(2)
+        with man_col3:
+            man_price = st.number_input("구매 가격 (원)", min_value=0, value=0, step=100, key="man_price")
+        with man_col4:
+            man_expiry = st.date_input("보관기한", value=datetime.now().date() + timedelta(days=7), key="man_expiry")
 
         if st.button("➕ 냉장고에 추가", key="man_submit", use_container_width=True):
             if man_name.strip():
-                add_fridge_item(st.session_state.user_id, man_name.strip(), man_expiry, amount=man_amount, unit=man_unit)
+                add_fridge_item(st.session_state.user_id, man_name.strip(), man_expiry, amount=man_amount, unit=man_unit, purchase_price=man_price if man_price > 0 else None)
                 st.success(f"'{man_name}' 추가 완료!")
                 time.sleep(0.5)
                 st.rerun()
