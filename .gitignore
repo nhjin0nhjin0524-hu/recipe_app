@@ -9,3 +9,6 @@ no_price_ingredients.txt
 # Python 캐시
 __pycache__/
 *.pyc
+
+# Streamlit secrets (API 키 포함 - 절대 커밋 금지)
+.streamlit/secrets.toml

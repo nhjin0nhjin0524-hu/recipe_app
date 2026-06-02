@@ -923,7 +923,7 @@ def check_recipe_has_allergens(recipe_id, user_allergies):
 # ─────────────────────────────────────────────────────────────────
 
 import os
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_API_KEY = st.secrets.get("ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_ai_nutrition_comment(recipe_title, calories, protein, fat, sodium, health_goal):
