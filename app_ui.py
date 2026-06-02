@@ -1318,8 +1318,24 @@ def add_ingredient_popup():
         st.write("---")
         st.write("⌨️ **상세 정보 입력하여 추가**")
 
+        man_name = st.text_input("재료명", placeholder="예: 두부, 계란, 우유", key="man_name")
+        man_col1, man_col2 = st.columns(2)
+        with man_col1:
+            man_amount = st.number_input("수량", min_value=0.1, value=1.0, step=0.5, key="man_amount")
+        with man_col2:
+            man_unit = st.selectbox("단위", ["개", "g", "ml", "컵", "큰술", "작은술"], key="man_unit")
+        man_expiry = st.date_input("보관기한", value=datetime.now().date() + timedelta(days=7), key="man_expiry")
 
-       
+        if st.button("➕ 냉장고에 추가", key="man_submit", use_container_width=True):
+            if man_name.strip():
+                add_fridge_item(st.session_state.user_id, man_name.strip(), man_expiry, amount=man_amount, unit=man_unit)
+                st.success(f"'{man_name}' 추가 완료!")
+                time.sleep(0.5)
+                st.rerun()
+            else:
+                st.warning("재료명을 입력해주세요.")
+
+
 # --- 6. 페이지 구현 ---
 
 if st.session_state.page == '대시보드':
