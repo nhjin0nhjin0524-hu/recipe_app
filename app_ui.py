@@ -975,21 +975,27 @@ def get_fridge_items(user_id):
 # 💡 [업그레이드] 재료를 추가할 때 단위가 없으면 스마트 추론기를 돌려서 채워 넣습니다!
 def add_fridge_item(user_id, item_name, expiry_date, amount=1, unit=None, purchase_price=None):
     try:
-        # 사용자가 단위를 입력하지 않았다면, 이름표를 보고 자동으로 단위를 맞춥니다.
         if not unit or unit == '개':
             unit = guess_item_unit(item_name)
 
-        # g이나 ml 단위인 경우, 수량(amount)이 1로 들어오면 이상하므로 기본값을 100으로 세팅해줍니다.
         if unit in ["g", "ml"] and amount == 1:
             amount = 100
 
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            sql = """
+            cursor.execute("""
                 INSERT INTO user_pantry (user_id, custom_name, expires_at, quantity, unit, purchase_price, is_finished)
                 VALUES (%s, %s, %s, %s, %s, %s, 0)
-            """
-            cursor.execute(sql, (user_id, item_name, expiry_date, amount, unit, purchase_price if purchase_price else None))
+            """, (user_id, item_name, expiry_date, amount, unit, purchase_price if purchase_price else None))
+            pantry_id = cursor.lastrowid
+
+            # 가격이 입력된 경우 식비 통계에도 자동 기록
+            if purchase_price and purchase_price > 0:
+                cursor.execute("""
+                    INSERT INTO user_expenses (user_id, amount, memo, spent_at, pantry_id)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (user_id, purchase_price, item_name, datetime.now().date(), pantry_id))
+
         conn.commit()
     except Exception as e:
         print(f"냉장고 추가 에러: {e}")
