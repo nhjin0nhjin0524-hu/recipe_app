@@ -1298,7 +1298,36 @@ def add_ingredient_popup():
                             price_val = it.get('price', {}).get('price', {}).get('formatted', {}).get('value', '0')
                             found_list.append({'id': str(uuid.uuid4()), 'name': name_val, 'expiry': (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d'), 'price': int(str(price_val).replace(',','').replace('.','')), 'amount': 1.0})
                         st.session_state.temp_matched_items = found_list
+                        if not found_list:
+                            st.warning("영수증에서 식재료를 찾지 못했습니다.")
                 except: st.error("분석 중 오류가 발생했습니다.")
+
+        # 분석 결과 목록 표시
+        if st.session_state.get('temp_matched_items'):
+            st.write(f"**📋 인식된 재료 ({len(st.session_state.temp_matched_items)}개)** — 보관기한을 수정 후 추가하세요")
+            for idx, item in enumerate(st.session_state.temp_matched_items):
+                with st.container(border=True):
+                    c1, c2, c3 = st.columns([3, 2, 1])
+                    with c1:
+                        new_name = st.text_input("재료명", value=item['name'], key=f"ocr_name_{idx}", label_visibility="collapsed")
+                        st.session_state.temp_matched_items[idx]['name'] = new_name
+                    with c2:
+                        new_expiry = st.date_input("보관기한", value=datetime.strptime(item['expiry'], '%Y-%m-%d').date(), key=f"ocr_exp_{idx}", label_visibility="collapsed")
+                        st.session_state.temp_matched_items[idx]['expiry'] = new_expiry.strftime('%Y-%m-%d')
+                    with c3:
+                        if st.button("추가", key=f"ocr_add_{idx}", use_container_width=True):
+                            add_fridge_item(st.session_state.user_id, new_name, new_expiry, purchase_price=item.get('price') or None)
+                            st.session_state.temp_matched_items.pop(idx)
+                            st.rerun()
+
+            st.write("")
+            if st.button("✅ 전체 냉장고에 추가", key="ocr_add_all", type="primary", use_container_width=True):
+                for item in st.session_state.temp_matched_items:
+                    add_fridge_item(st.session_state.user_id, item['name'], item['expiry'], purchase_price=item.get('price') or None)
+                st.session_state.temp_matched_items = []
+                st.success("전체 추가 완료!")
+                time.sleep(0.5)
+                st.rerun()
 
     # --- [탭 2: 직접 입력] ---
     # 팝업 함수 내부의 직접 입력 탭 부분
