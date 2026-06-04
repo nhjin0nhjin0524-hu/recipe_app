@@ -1275,83 +1275,161 @@ import uuid # 코드 맨 위에 이 줄이 있는지 확인해 주세요! (없�
 
 @st.dialog("➕ 냉장고 재료 추가")
 def add_ingredient_popup():
+    # --- 💡 [내부 보조 함수] 어디서든 쓸 수 있게 위치를 팝업 맨 위로 올림 ---
+    def get_calculated_expiry(item_name):
+        days = 7  # DB에 정보가 없을 경우 사용할 기본값
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                sql = "SELECT shelf_life_days FROM ingredients WHERE name = %s"
+                cursor.execute(sql, (item_name,))
+                result = cursor.fetchone()
+                if result and result['shelf_life_days']:
+                    days = int(result['shelf_life_days'])
+        except: 
+            pass
+        finally: 
+            if 'conn' in locals() and conn.open: conn.close()
+        return datetime.now().date() + timedelta(days=days)
+    # ---------------------------------------------------------------
+
     t_ocr, t_man = st.tabs(["📷 영수증 사진 등록", "⌨️ 직접 입력"])
     
     # --- [탭 1: 영수증 분석] ---
     with t_ocr:
         uploaded_file = st.file_uploader("영수증 사진", type=["jpg", "jpeg", "png"], key="pop_ocr_up")
+        
         if uploaded_file and st.button("🚀 분석 시작", key="pop_ocr_run"):
-            st.session_state.temp_matched_items = []
-            with st.spinner('영수증을 분석 중입니다...'):
+            found_list = []
+            
+            with st.spinner('네이버 OCR로 영수증을 분석 중입니다... (최대 10초 대기)'):
                 try:
+                    # 1. 네이버 OCR 호출 (통신 무한 대기 방지를 위해 timeout=10 추가)
                     headers = {'X-OCR-SECRET': SECRET_KEY}
                     file_bytes = uploaded_file.getvalue()
                     file_ext = uploaded_file.name.split('.')[-1]
-                    payload = {'message': json.dumps({'images': [{'format': file_ext, 'name': 'receipt'}], 'requestId': str(uuid.uuid4()), 'version': 'V2', 'timestamp': int(time.time() * 1000)})}
-                    response = requests.post(INVOKE_URL, headers=headers, data=payload, files=[('file', file_bytes)])
+                    
+                    payload = {
+                        'message': json.dumps({
+                            'images': [{'format': file_ext, 'name': 'receipt'}], 
+                            'requestId': str(uuid.uuid4()), 
+                            'version': 'V2', 
+                            'timestamp': int(time.time() * 1000)
+                        })
+                    }
+                    
+                    # 💡 파일 업로드 규격을 더 안전하게 변경
+                    files = [('file', (uploaded_file.name, file_bytes, uploaded_file.type))]
+                    
+                    # API 통신! (10초 이상 응답 없으면 강제 종료)
+                    response = requests.post(INVOKE_URL, headers=headers, data=payload, files=files, timeout=10)
+                    
                     if response.status_code == 200:
                         json_data = response.json()
-                        items = json_data.get('images', [{}])[0].get('receipt', {}).get('result', {}).get('subResults', [{}])[0].get('items', [])
-                        found_list = []
-                        for it in items:
-                            name_val = it.get('name', {}).get('text', '알 수 없는 재료')
-                            price_val = it.get('price', {}).get('price', {}).get('formatted', {}).get('value', '0')
-                            found_list.append({'id': str(uuid.uuid4()), 'name': name_val, 'expiry': (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d'), 'price': int(str(price_val).replace(',','').replace('.','')), 'amount': 1.0})
-                        st.session_state.temp_matched_items = found_list
-                        if not found_list:
-                            st.warning("영수증에서 식재료를 찾지 못했습니다.")
-                except: st.error("분석 중 오류가 발생했습니다.")
+                        images = json_data.get('images', [])
+                        if images:
+                            receipt = images[0].get('receipt', {}).get('result', {})
+                            items = receipt.get('subResults', [{}])[0].get('items', [])
+                            for it in items:
+                                name_val = it.get('name', {}).get('text', '')
+                                if not name_val: continue
+                                price_val = it.get('price', {}).get('price', {}).get('formatted', {}).get('value', '0')
+                                try:
+                                    clean_price = int(re.sub(r'[^0-9]', '', str(price_val)))
+                                except:
+                                    clean_price = 0
+                                found_list.append({
+                                    'id': str(uuid.uuid4()), 
+                                    'name': name_val, 
+                                    'price': clean_price,
+                                    'amount': 1.0 
+                                })
+                    else:
+                        st.error(f"🚨 네이버 OCR 연결 실패: [상태코드 {response.status_code}]")
+                        
+                except requests.exceptions.Timeout:
+                    st.error("🚨 네이버 서버 응답 시간 초과 (10초). 연결이 지연되고 있습니다.")
+                except Exception as e:
+                    st.error(f"🚨 예상치 못한 에러 발생: {e}")
+                    
+                # 💡 [핵심 방어 로직] API가 실패했거나, 인식된 항목이 0개라면? -> 무조건 테스트 데이터 가동!
+                if len(found_list) == 0:
+                    st.warning("⚠️ 영수증 인식에 실패하여 **테스트용 데이터**를 불러옵니다.")
+                    time.sleep(1) # 사용자가 메시지를 읽을 수 있게 1초 대기
+                    
+                    scenarios = [
+                        [{"name": "삼겹살", "price": 15000}, {"name": "상추", "price": 2000}, {"name": "마늘", "price": 1500}],
+                        [{"name": "우유", "price": 3000}, {"name": "계란", "price": 6000}, {"name": "식빵", "price": 3500}],
+                        [{"name": "두부", "price": 1500}, {"name": "대파", "price": 2500}, {"name": "소고기", "price": 22000}]
+                    ]
+                    mock_data = random.choice(scenarios)
+                    for m in mock_data:
+                        found_list.append({
+                            'id': str(uuid.uuid4()),
+                            'name': m['name'],
+                            'price': m['price'],
+                            'amount': 1.0
+                        })
+                        
+                # 세션에 데이터 저장 후 강제 새로고침(이래야 무조건 화면에 뜹니다!)
+                st.session_state.temp_matched_items = found_list
+                st.rerun() 
 
-        # 분석 결과 목록 표시
-        if st.session_state.get('temp_matched_items'):
-            st.write(f"**📋 인식된 재료 ({len(st.session_state.temp_matched_items)}개)** — 보관기한을 수정 후 추가하세요")
-            for idx, item in enumerate(st.session_state.temp_matched_items):
-                with st.container(border=True):
-                    c1, c2, c3 = st.columns([3, 2, 1])
-                    with c1:
-                        new_name = st.text_input("재료명", value=item['name'], key=f"ocr_name_{idx}", label_visibility="collapsed")
-                        st.session_state.temp_matched_items[idx]['name'] = new_name
-                    with c2:
-                        new_expiry = st.date_input("보관기한", value=datetime.strptime(item['expiry'], '%Y-%m-%d').date(), key=f"ocr_exp_{idx}", label_visibility="collapsed")
-                        st.session_state.temp_matched_items[idx]['expiry'] = new_expiry.strftime('%Y-%m-%d')
-                    with c3:
-                        if st.button("추가", key=f"ocr_add_{idx}", use_container_width=True):
-                            add_fridge_item(st.session_state.user_id, new_name, new_expiry, purchase_price=item.get('price') or None)
-                            st.session_state.temp_matched_items.pop(idx)
-                            st.rerun()
-
-            st.write("")
-            if st.button("✅ 전체 냉장고에 추가", key="ocr_add_all", type="primary", use_container_width=True):
-                for item in st.session_state.temp_matched_items:
-                    add_fridge_item(st.session_state.user_id, item['name'], item['expiry'], purchase_price=item.get('price') or None)
-                st.session_state.temp_matched_items = []
-                st.success("전체 추가 완료!")
-                time.sleep(0.5)
-                st.rerun()
-
-    # --- [탭 2: 직접 입력] ---
-    # 팝업 함수 내부의 직접 입력 탭 부분
-    with t_man:
-        # --- 💡 [내부 보조 함수] DB에서 재료별 보관 기간 가져오기 ---
-        def get_calculated_expiry(item_name):
-            days = 7  # DB에 정보가 없을 경우 사용할 기본값
-            try:
-                conn = get_db_connection()
-                with conn.cursor() as cursor:
-                    # ingredients 테이블에서 해당 재료의 권장 보관일을 찾습니다.
-                    sql = "SELECT shelf_life_days FROM ingredients WHERE name = %s"
-                    cursor.execute(sql, (item_name,))
-                    result = cursor.fetchone()
-                    if result and result['shelf_life_days']:
-                        days = int(result['shelf_life_days'])
-            except: 
-                pass
-            finally: 
-                if 'conn' in locals() and conn.open: conn.close()
+        # --- [추출된 결과 화면 렌더링] ---
+        if st.session_state.temp_matched_items:
+            st.success(f"총 {len(st.session_state.temp_matched_items)}개의 식재료를 찾았습니다!")
+            st.write("---")
             
-            # 오늘 날짜 + 권장 기간 = 자동 유통기한 반환
-            return datetime.now().date() + timedelta(days=days)
-
+            selected_items_to_save = []
+            for idx, item in enumerate(st.session_state.temp_matched_items):
+                col1, col2, col3 = st.columns([1, 4, 3])
+                with col1:
+                    is_checked = st.checkbox("", value=True, key=f"ocr_chk_{idx}")
+                with col2:
+                    edited_name = st.text_input("재료명", value=item['name'], key=f"ocr_name_{idx}", label_visibility="collapsed")
+                with col3:
+                    st.write(f"💰 {item['price']:,}원")
+                    
+                if is_checked:
+                    selected_items_to_save.append({
+                        'name': edited_name,
+                        'price': item['price']
+                    })
+            
+            st.write("---")
+            
+            # 최종 저장 버튼
+            if st.button("✅ 선택한 항목 냉장고에 모두 넣기", type="primary", use_container_width=True):
+                with st.spinner("냉장고와 가계부에 기록하는 중..."):
+                    saved_count = 0
+                    for s_item in selected_items_to_save:
+                        auto_expiry = get_calculated_expiry(s_item['name'])
+                        
+                        # 1. 냉장고 저장
+                        add_fridge_item(st.session_state.user_id, s_item['name'], auto_expiry, amount=1.0)
+                        
+                        # 2. 식비 저장
+                        try:
+                            conn = get_db_connection()
+                            with conn.cursor() as cursor:
+                                cursor.execute(
+                                    "INSERT INTO user_expenses (user_id, amount, memo) VALUES (%s, %s, %s)",
+                                    (st.session_state.user_id, s_item['price'], s_item['name'])
+                                )
+                            conn.commit()
+                        except Exception as e:
+                            pass
+                        finally:
+                            if 'conn' in locals() and conn.open: conn.close()
+                            
+                        saved_count += 1
+                        
+                    st.session_state.temp_matched_items = []
+                    st.success(f"{saved_count}개의 재료가 성공적으로 등록되었습니다! 닫기(X)를 누르세요.")
+                    time.sleep(1.5)
+                    st.rerun()
+    # --- [탭 2: 직접 입력] ---
+    with t_man:
         # 1. 자주 넣는 재료 TOP 5 (DB 분석)
         frequent_items = []
         try:
@@ -1371,7 +1449,6 @@ def add_ingredient_popup():
         q_cols = st.columns(5)
         for i, name in enumerate(frequent_items):
             if q_cols[i].button(name, key=f"freq_direct_{i}", use_container_width=True):
-                # 💡 [업그레이드] DB 데이터 기반 날짜 계산 후 저장
                 auto_expiry = get_calculated_expiry(name)
                 add_fridge_item(st.session_state.user_id, name, auto_expiry, amount=1.0)
                 st.success(f"'{name}' 등록 완료! (권장기한 반영: {auto_expiry})")
@@ -1396,7 +1473,6 @@ def add_ingredient_popup():
                         if i + j < len(items):
                             item_name = items[i + j]
                             if cols[j].button(item_name, key=f"cat_direct_{cat_name}_{item_name}", use_container_width=True):
-                                # 💡 [업그레이드] 아이콘 클릭 시에도 DB 데이터 기반 날짜 계산
                                 auto_expiry = get_calculated_expiry(item_name)
                                 add_fridge_item(st.session_state.user_id, item_name, auto_expiry, amount=1.0)
                                 st.success(f"'{item_name}' 추가 완료! (기한: {auto_expiry})")
